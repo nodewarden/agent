@@ -9,9 +9,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sync"
 	"time"
-	
+
 	"nodewarden/internal/cache"
 	"nodewarden/internal/config"
 	"nodewarden/internal/metrics"
