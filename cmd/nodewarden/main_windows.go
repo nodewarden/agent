@@ -113,8 +113,6 @@ func (s *nodewardenService) Execute(args []string, r <-chan svc.ChangeRequest, c
 			switch c.Cmd {
 			case svc.Interrogate:
 				changes <- c.CurrentStatus
-				// Add a small delay for debugging
-				time.Sleep(100 * time.Millisecond)
 
 			case svc.Stop, svc.Shutdown:
 				s.logger.Info("received stop/shutdown request, stopping service")

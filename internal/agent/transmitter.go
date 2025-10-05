@@ -234,6 +234,10 @@ func (t *HTTPTransmitter) sendRequest(ctx context.Context, jsonData []byte, retr
 
 	// Check other response status
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		// Provide specific error message for authentication failures
+		if resp.StatusCode == 401 {
+			return fmt.Errorf("authentication denied: wrong tenant_id or api_key")
+		}
 		return fmt.Errorf("server returned status %d", resp.StatusCode)
 	}
 

@@ -4,6 +4,7 @@ package resilience
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -36,7 +37,18 @@ func Retry(ctx context.Context, operation func() error) error {
 			}
 		}
 	}
-	
+
+	// Customize error message for authentication failures
+	if lastErr != nil && strings.Contains(lastErr.Error(), "authentication denied") {
+		// Extract the detail part after "authentication denied: "
+		errMsg := lastErr.Error()
+		if idx := strings.Index(errMsg, "authentication denied: "); idx >= 0 {
+			detail := errMsg[idx+len("authentication denied: "):]
+			return fmt.Errorf("authentication denied after %d attempts: %s", maxAttempts, detail)
+		}
+		return fmt.Errorf("authentication denied after %d attempts: %w", maxAttempts, lastErr)
+	}
+
 	return fmt.Errorf("operation failed after %d attempts: %w", maxAttempts, lastErr)
 }
 
@@ -71,6 +83,17 @@ func RetryWithResult[T any](ctx context.Context, operation func() (T, error)) (T
 			}
 		}
 	}
-	
+
+	// Customize error message for authentication failures
+	if lastErr != nil && strings.Contains(lastErr.Error(), "authentication denied") {
+		// Extract the detail part after "authentication denied: "
+		errMsg := lastErr.Error()
+		if idx := strings.Index(errMsg, "authentication denied: "); idx >= 0 {
+			detail := errMsg[idx+len("authentication denied: "):]
+			return zero, fmt.Errorf("authentication denied after %d attempts: %s", maxAttempts, detail)
+		}
+		return zero, fmt.Errorf("authentication denied after %d attempts: %w", maxAttempts, lastErr)
+	}
+
 	return zero, fmt.Errorf("operation failed after %d attempts: %w", maxAttempts, lastErr)
 }

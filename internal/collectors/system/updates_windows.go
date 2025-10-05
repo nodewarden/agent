@@ -4,165 +4,144 @@ package system
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
+	"sync"
+	"time"
+
+	"github.com/ceshihao/windowsupdate"
 )
 
-// getAvailableUpdates returns the number of available system updates on Windows.
-// It safely checks Windows Update information without executing commands.
+// Cache update count for 30 minutes to avoid repeated COM calls
+// Windows Update API is slow on first call (~500-1000ms) but provides accurate data
+// Caching eliminates the overhead for subsequent checks (60-second collection cycles)
+var (
+	cachedUpdateCount     int
+	cachedSecurityCount   int
+	updateCacheExpiry     time.Time
+	updateCacheMutex      sync.Mutex
+	updateCacheInitialized bool
+)
+
+// getAvailableUpdates returns the number of available system updates using Windows Update Agent API.
+// This replaces file I/O based methods which were:
+// - Reading large log files (3-8 seconds with Windows Defender scanning)
+// - Inaccurate (parsing text logs is unreliable)
+// - Subject to file locks and permissions issues
+//
+// Windows Update Agent COM API is:
+// - Official Microsoft API for update checking
+// - Accurate and reliable
+// - First call: 500-1000ms, cached calls: 0ms (instant)
+// - Cached for 30 minutes (updates don't change frequently)
 func (c *Collector) getAvailableUpdates(ctx context.Context) (int, error) {
-	// Try multiple methods to get update count
+	updateCacheMutex.Lock()
+	defer updateCacheMutex.Unlock()
 
-	// Method 1: Check Windows Update data files
-	if count, err := checkWindowsUpdateFiles(); err == nil && count > 0 {
-		return count, nil
+	// Return cached value if still fresh (30 minutes)
+	if updateCacheInitialized && time.Now().Before(updateCacheExpiry) {
+		c.logger.Debug("Returning cached Windows Update count",
+			"total_updates", cachedUpdateCount,
+			"security_updates", cachedSecurityCount,
+			"cache_expires_in", time.Until(updateCacheExpiry).Round(time.Minute).String())
+		return cachedUpdateCount, nil
 	}
 
-	// Method 2: Check WSUS client state
-	if count, err := checkWSUSClientState(); err == nil && count > 0 {
-		return count, nil
-	}
+	c.logger.Debug("Querying Windows Update Agent API for available updates (cache expired or first run)")
 
-	// Method 3: Check Windows Update log
-	if count, err := checkWindowsUpdateLog(); err == nil && count > 0 {
-		return count, nil
-	}
-
-	// No updates found or couldn't read update info
-	return 0, nil
-}
-
-// checkWindowsUpdateFiles checks Windows Update data files for pending updates.
-func checkWindowsUpdateFiles() (int, error) {
-	// Windows Update stores information in various locations
-	// We check for files that indicate pending updates
-
-	// Check the SoftwareDistribution folder
-	winDir := os.Getenv("WINDIR")
-	if winDir == "" {
-		winDir = "C:\\Windows"
-	}
-
-	// Check for pending.xml which lists pending updates
-	pendingFile := filepath.Join(winDir, "SoftwareDistribution", "ReportingEvents.log")
-	if data, err := os.ReadFile(pendingFile); err == nil {
-		// Count occurrences of update events
-		count := 0
-		lines := strings.Split(string(data), "\n")
-		for _, line := range lines {
-			// Look for download or install pending events
-			if strings.Contains(line, "UpdateOrchestrator") &&
-			   (strings.Contains(line, "Download") || strings.Contains(line, "Install")) &&
-			   strings.Contains(line, "Pending") {
-				count++
-			}
+	// Use Windows Update Agent COM API
+	// Note: COM objects are cleaned up by go-ole's garbage collection
+	session, err := windowsupdate.NewUpdateSession()
+	if err != nil {
+		c.logger.Warn("Failed to create Windows Update session", "error", err)
+		// If COM fails, return cached value if we have one, otherwise 0
+		if updateCacheInitialized {
+			c.logger.Info("Returning stale cached update count due to COM error",
+				"cached_count", cachedUpdateCount)
+			return cachedUpdateCount, nil
 		}
-		if count > 0 {
-			return count, nil
+		return 0, err
+	}
+
+	searcher, err := session.CreateUpdateSearcher()
+	if err != nil {
+		c.logger.Warn("Failed to create update searcher", "error", err)
+		// If searcher creation fails, return cached value if we have one, otherwise 0
+		if updateCacheInitialized {
+			c.logger.Info("Returning stale cached update count due to searcher error",
+				"cached_count", cachedUpdateCount)
+			return cachedUpdateCount, nil
 		}
+		return 0, err
 	}
 
-	// Check Windows Update database
-	dbPath := filepath.Join(winDir, "SoftwareDistribution", "DataStore", "DataStore.edb")
-	if _, err := os.Stat(dbPath); err == nil {
-		// Database exists but we can't easily parse it without libraries
-		// This at least confirms Windows Update is configured
-		return 0, nil
+	// Search for updates that are:
+	// - Not installed (IsInstalled=0)
+	// - Not hidden (IsHidden=0)
+	// Criteria reference: https://docs.microsoft.com/en-us/windows/win32/api/wuapi/nf-wuapi-iupdatesearcher-search
+	searchResult, err := searcher.Search("IsInstalled=0 AND IsHidden=0")
+	if err != nil {
+		c.logger.Warn("Failed to search for updates via Windows Update Agent", "error", err)
+		// If search fails, return cached value if we have one, otherwise 0
+		if updateCacheInitialized {
+			c.logger.Info("Returning stale cached update count due to search error",
+				"cached_count", cachedUpdateCount)
+			return cachedUpdateCount, nil
+		}
+		return 0, err
 	}
 
-	return 0, fmt.Errorf("Windows Update files not found")
-}
+	// Count total updates
+	updateCount := len(searchResult.Updates)
 
-// checkWSUSClientState checks WSUS client state file for update information.
-func checkWSUSClientState() (int, error) {
-	// WSUS client creates state files with update information
-	programData := os.Getenv("ProgramData")
-	if programData == "" {
-		programData = "C:\\ProgramData"
-	}
-
-	// Check for WSUS state file
-	stateFile := filepath.Join(programData, "Microsoft", "Windows", "WindowsUpdate", "States.xml")
-	if data, err := os.ReadFile(stateFile); err == nil {
-		// Parse for update count
-		// Look for PendingUpdateCount or similar tags
-		if strings.Contains(string(data), "PendingUpdateCount") {
-			// Extract count from XML
-			lines := strings.Split(string(data), "\n")
-			for _, line := range lines {
-				if strings.Contains(line, "PendingUpdateCount") {
-					// Extract number from tag like <PendingUpdateCount>5</PendingUpdateCount>
-					start := strings.Index(line, ">")
-					end := strings.LastIndex(line, "<")
-					if start > 0 && end > start {
-						countStr := line[start+1 : end]
-						if count, err := strconv.Atoi(strings.TrimSpace(countStr)); err == nil {
-							return count, nil
-						}
-					}
-				}
-			}
+	// Count security updates specifically
+	// Security updates have MsrcSeverity field set (Critical, Important, Moderate, Low)
+	securityCount := 0
+	for _, update := range searchResult.Updates {
+		if update.MsrcSeverity != "" {
+			securityCount++
 		}
 	}
 
-	return 0, fmt.Errorf("WSUS state file not found")
-}
+	// Cache the results for 30 minutes
+	// Windows Update doesn't change frequently, so this is safe
+	cachedUpdateCount = updateCount
+	cachedSecurityCount = securityCount
+	updateCacheExpiry = time.Now().Add(30 * time.Minute)
+	updateCacheInitialized = true
 
-// checkWindowsUpdateLog checks Windows Update log for pending updates.
-func checkWindowsUpdateLog() (int, error) {
-	// Check the ETL log for Windows Update
-	winDir := os.Getenv("WINDIR")
-	if winDir == "" {
-		winDir = "C:\\Windows"
-	}
+	c.logger.Info("Windows Update check completed via COM API",
+		"total_updates", updateCount,
+		"security_updates", securityCount,
+		"cache_valid_until", updateCacheExpiry.Format(time.RFC3339))
 
-	// Windows 10/11 stores logs in ETL format, but we can check for the log directory
-	logDir := filepath.Join(winDir, "Logs", "WindowsUpdate")
-	if _, err := os.Stat(logDir); err == nil {
-		// Directory exists, Windows Update is configured
-		// We can't easily parse ETL files without special libraries
-		return 0, nil
-	}
-
-	// Fallback: Check older text-based log
-	logFile := filepath.Join(winDir, "WindowsUpdate.log")
-	if data, err := os.ReadFile(logFile); err == nil {
-		// Count update entries
-		count := 0
-		lines := strings.Split(string(data), "\n")
-		for _, line := range lines {
-			// Look for lines indicating available updates
-			if strings.Contains(line, "updates available") {
-				// Try to extract count
-				parts := strings.Fields(line)
-				for i, part := range parts {
-					if part == "updates" && i > 0 {
-						if num, err := strconv.Atoi(parts[i-1]); err == nil {
-							count = num
-							break
-						}
-					}
-				}
-			} else if strings.Contains(line, "Update available") ||
-					  strings.Contains(line, "Download available") {
-				count++
-			}
-		}
-		if count > 0 {
-			return count, nil
-		}
-	}
-
-	return 0, fmt.Errorf("Windows Update log not found")
+	return updateCount, nil
 }
 
 // getSecurityUpdates returns the number of available security updates on Windows.
-// Windows doesn't easily distinguish between regular and security updates without WMI/COM.
+// Security updates are those with MsrcSeverity field set (Critical, Important, Moderate, Low).
+// This data is cached along with total update count for 30 minutes.
 func (c *Collector) getSecurityUpdates(ctx context.Context) (int, error) {
-	// Windows doesn't provide separate security update counts without COM/WMI
-	// Return 0 as security updates are included in general updates
-	return 0, nil
+	updateCacheMutex.Lock()
+	defer updateCacheMutex.Unlock()
+
+	// If cache is valid, return cached security count
+	if updateCacheInitialized && time.Now().Before(updateCacheExpiry) {
+		c.logger.Debug("Returning cached security update count",
+			"security_updates", cachedSecurityCount,
+			"cache_expires_in", time.Until(updateCacheExpiry).Round(time.Minute).String())
+		return cachedSecurityCount, nil
+	}
+
+	// Cache is expired or not initialized
+	// Unlock mutex before calling getAvailableUpdates to avoid deadlock
+	updateCacheMutex.Unlock()
+	_, err := c.getAvailableUpdates(ctx)
+	updateCacheMutex.Lock()
+
+	// After getAvailableUpdates completes, security count should be cached
+	if err != nil {
+		c.logger.Warn("Failed to get security update count", "error", err)
+		return 0, err
+	}
+
+	return cachedSecurityCount, nil
 }

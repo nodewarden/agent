@@ -232,8 +232,17 @@ func (wp *WorkerPool) CollectAll(ctx context.Context, collectors []metrics.Colle
 		}
 	}
 
-	// Collect results with timeout
-	resultTimeout := time.NewTimer(30 * time.Second)
+	// Collect results with platform-aware timeout
+	// Windows needs more time for COM/WMI initialization overhead
+	// Linux uses fast /proc filesystem and completes quickly
+	var overallTimeout time.Duration
+	if runtime.GOOS == "windows" {
+		overallTimeout = 40 * time.Second // Windows: COM + WMI overhead
+	} else {
+		overallTimeout = 30 * time.Second // Linux: Fast /proc filesystem
+	}
+
+	resultTimeout := time.NewTimer(overallTimeout)
 	defer resultTimeout.Stop()
 
 	expectedResults := submittedCount
@@ -243,9 +252,18 @@ func (wp *WorkerPool) CollectAll(ctx context.Context, collectors []metrics.Colle
 			results = append(results, result)
 
 		case <-resultTimeout.C:
-			wp.logger.Warn("timeout waiting for collection results",
+			// Extract completed collector names for debugging
+			completedNames := make([]string, 0, len(results))
+			for _, r := range results {
+				completedNames = append(completedNames, r.CollectorName)
+			}
+
+			wp.logger.Error("COLLECTION TIMEOUT - Agent may appear offline",
 				"received", len(results),
-				"expected", expectedResults)
+				"expected", expectedResults,
+				"timeout_seconds", overallTimeout.Seconds(),
+				"completed_collectors", completedNames,
+				"platform", runtime.GOOS)
 			return results
 
 		case <-ctx.Done():
