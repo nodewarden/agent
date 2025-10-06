@@ -132,9 +132,9 @@ func (c *Collector) GetSecurityUpdates(ctx context.Context) (int, error) {
 	}
 
 	// Cache is expired or not initialized
-	// Unlock mutex before calling getAvailableUpdates to avoid deadlock
+	// Unlock mutex before calling GetAvailableUpdates to avoid deadlock
 	updateCacheMutex.Unlock()
-	_, err := c.getAvailableUpdates(ctx)
+	_, err := c.GetAvailableUpdates(ctx)
 	updateCacheMutex.Lock()
 
 	// After getAvailableUpdates completes, security count should be cached

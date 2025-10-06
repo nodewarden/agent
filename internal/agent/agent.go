@@ -71,7 +71,7 @@ type MetricTransmitter interface {
 }
 
 // New creates a new Nodewarden agent instance.
-func New(cfg *config.Config, logger *slog.Logger) (*Agent, error) {
+func New(cfg *config.Config, logger *slog.Logger, version string) (*Agent, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("configuration cannot be nil")
 	}
@@ -96,8 +96,8 @@ func New(cfg *config.Config, logger *slog.Logger) (*Agent, error) {
 	// Create registry
 	reg := registry.NewRegistry(logger.With("component", "registry"))
 
-	// Create transmitter with hostname
-	transmitter, err := NewHTTPTransmitter(cfg, hostname, logger.With("component", "transmitter"))
+	// Create transmitter with hostname and version
+	transmitter, err := NewHTTPTransmitter(cfg, hostname, version, logger.With("component", "transmitter"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create transmitter: %w", err)
 	}

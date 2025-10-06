@@ -38,12 +38,15 @@ type HTTPTransmitter struct {
 }
 
 // NewHTTPTransmitter creates a new HTTP transmitter.
-func NewHTTPTransmitter(cfg *config.Config, hostname string, logger *slog.Logger) (MetricTransmitter, error) {
+func NewHTTPTransmitter(cfg *config.Config, hostname string, version string, logger *slog.Logger) (MetricTransmitter, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("configuration cannot be nil")
 	}
 	if hostname == "" {
 		hostname = "unknown"
+	}
+	if version == "" {
+		version = "dev"
 	}
 	if logger == nil {
 		logger = slog.Default()
@@ -52,7 +55,7 @@ func NewHTTPTransmitter(cfg *config.Config, hostname string, logger *slog.Logger
 	t := &HTTPTransmitter{
 		config:     cfg,
 		logger:     logger,
-		version:    "1.0.0",
+		version:    version,
 		hostname:   hostname,
 		httpClient: sharedhttp.GetClient(), // Use global client
 	}
@@ -298,8 +301,8 @@ func (t *HTTPTransmitter) createPayload(metrics []metrics.Metric) map[string]int
 		payload["os_info"] = osInfo
 	}
 	
-	// Include latency information for agent_up metric
-	if t.lastLatencyMs > 0 {
+	// Include latency information (including 0ms for sub-millisecond responses)
+	if t.lastLatencyMs >= 0 {
 		payload["agent_latency"] = t.lastLatencyMs
 	}
 	

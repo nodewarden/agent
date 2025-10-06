@@ -93,22 +93,19 @@ func getAPTUpdates() (int, error) {
 
 // getYumDnfUpdates checks for available updates on YUM/DNF-based systems.
 func getYumDnfUpdates() (int, error) {
-	// Check if this is a YUM/DNF-based system
-	var cmd *exec.Cmd
+	// Check if this is a YUM-based system (works on all RedHat variants)
+	// On modern systems (RHEL 8+, Fedora 18+), yum is a symlink to dnf
+	if _, err := os.Stat("/usr/bin/yum"); os.IsNotExist(err) {
+		return 0, err
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	if _, err := os.Stat("/usr/bin/dnf"); err == nil {
-		// Use DNF (Fedora, RHEL 8+)
-		cmd = exec.CommandContext(ctx, "/usr/bin/dnf", "check-update", "--quiet")
-	} else if _, err := os.Stat("/usr/bin/yum"); err == nil {
-		// Use YUM (RHEL 7, CentOS 7)
-		cmd = exec.CommandContext(ctx, "/usr/bin/yum", "check-update", "--quiet")
-	} else {
-		return 0, os.ErrNotExist
-	}
-
-	output, err := cmd.Output()
+	cmd := exec.CommandContext(ctx, "/usr/bin/yum", "check-update", "--quiet", "--assumeyes")
+	// Set XDG_STATE_HOME to redirect dnf5 logs to a writable directory
+	cmd.Env = append(os.Environ(), "XDG_STATE_HOME=/var/log/nodewarden/.dnf-state")
+	output, err := cmd.CombinedOutput()
 	// check-update returns exit code 100 if updates are available
 	// This is expected behavior, not an error
 	if err != nil {
@@ -125,18 +122,29 @@ func getYumDnfUpdates() (int, error) {
 	count := 0
 	scanner := bufio.NewScanner(strings.NewReader(string(output)))
 	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
+		line := scanner.Text()
+
+		// Stop parsing at "Obsoleting packages" section (contains duplicates)
+		if strings.HasPrefix(line, "Obsoleting packages") {
+			break
+		}
+
+		// Skip indented lines (old versions in obsoleting section)
+		if len(line) > 0 && (line[0] == ' ' || line[0] == '\t') {
+			continue
+		}
+
+		lineTrimmed := strings.TrimSpace(line)
 		// Package lines contain package name, version, and repository
 		// Format: "package.arch    version    repository"
-		if line != "" && !strings.HasPrefix(line, "Last metadata") && !strings.HasPrefix(line, "Security:") {
-			parts := strings.Fields(line)
+		if lineTrimmed != "" && !strings.HasPrefix(lineTrimmed, "Last metadata") && !strings.HasPrefix(lineTrimmed, "Security:") {
+			parts := strings.Fields(lineTrimmed)
 			// Valid package line has at least 3 parts
 			if len(parts) >= 3 {
 				count++
 			}
 		}
 	}
-
 	return count, nil
 }
 
@@ -257,20 +265,18 @@ func getAPTSecurityUpdates() (int, error) {
 
 // getYumDnfSecurityUpdates checks for available security updates on YUM/DNF-based systems.
 func getYumDnfSecurityUpdates() (int, error) {
-	var cmd *exec.Cmd
+	// Check if this is a YUM-based system (works on all RedHat variants)
+	// On modern systems (RHEL 8+, Fedora 18+), yum is a symlink to dnf
+	if _, err := os.Stat("/usr/bin/yum"); os.IsNotExist(err) {
+		return 0, err
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	if _, err := os.Stat("/usr/bin/dnf"); err == nil {
-		// Use DNF (Fedora, RHEL 8+)
-		cmd = exec.CommandContext(ctx, "/usr/bin/dnf", "updateinfo", "list", "security", "--quiet")
-	} else if _, err := os.Stat("/usr/bin/yum"); err == nil {
-		// Use YUM (RHEL 7, CentOS 7)
-		cmd = exec.CommandContext(ctx, "/usr/bin/yum", "updateinfo", "list", "security", "--quiet")
-	} else {
-		return 0, os.ErrNotExist
-	}
-
+	cmd := exec.CommandContext(ctx, "/usr/bin/yum", "updateinfo", "list", "security", "--quiet", "--assumeyes")
+	// Set XDG_STATE_HOME to redirect dnf5 logs to a writable directory
+	cmd.Env = append(os.Environ(), "XDG_STATE_HOME=/var/log/nodewarden/.dnf-state")
 	output, err := cmd.Output()
 	if err != nil {
 		// If command fails, return 0 (no security updates)

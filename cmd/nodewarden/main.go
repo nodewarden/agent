@@ -152,7 +152,7 @@ func runConsoleMode(cfg *config.Config, logger *slog.Logger) {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	// Create and start the agent
-	nodewardenAgent, err := agent.New(cfg, logger)
+	nodewardenAgent, err := agent.New(cfg, logger, version)
 	if err != nil {
 		logger.Error("failed to create agent", "error", err)
 		os.Exit(1)

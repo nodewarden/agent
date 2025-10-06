@@ -73,8 +73,8 @@ func (s *nodewardenService) Execute(args []string, r <-chan svc.ChangeRequest, c
 		elog.Info(1, "Logging configured, creating agent...")
 	}
 
-	// Initialize agent
-	s.agent, err = agent.New(s.config, s.logger)
+	// Initialize agent with version
+	s.agent, err = agent.New(s.config, s.logger, version)
 	if err != nil {
 		s.logger.Error("failed to create agent in service mode", "error", err)
 		if elog != nil {

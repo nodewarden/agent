@@ -1,9 +1,11 @@
 # Nodewarden Agent Build Configuration
 BINARY_NAME=nodewarden
 VERSION=$(shell cat VERSION 2>/dev/null || echo "1.0.0")
+BUILD_DATE=$(shell date "+%Y-%m-%d %H:%M:%S")
+GIT_COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
 # Build flags
-LDFLAGS=-ldflags "-s -w -X main.version=$(VERSION)"
+LDFLAGS=-ldflags "-s -w -X main.version=$(VERSION) -X 'main.buildDate=$(BUILD_DATE)' -X main.gitCommit=$(GIT_COMMIT)"
 
 # Default target
 .PHONY: all
