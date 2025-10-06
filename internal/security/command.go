@@ -1,5 +1,4 @@
-// Package security provides enterprise-grade security utilities for safe command execution,
-// input validation, and security policy enforcement.
+// Package security provides security utilities for safe command execution and input validation.
 package security
 
 import (
