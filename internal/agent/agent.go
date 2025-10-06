@@ -550,13 +550,13 @@ func (a *Agent) performUpdateCheck(ctx context.Context) {
 		securityCount = 0
 	}
 
-	// Store in cache with 1-hour expiration
+	// Store in cache with 6-hour expiration (aligns with check interval)
 	updateInfo := map[string]interface{}{
 		"count":          updateCount,
 		"security_count": securityCount,
 		"timestamp":      time.Now(),
 	}
-	cache.Set(cacheKey, updateInfo, 1*time.Hour)
+	cache.Set(cacheKey, updateInfo, 6*time.Hour)
 
 	a.logger.Info("background update check completed",
 		"updates_available", updateCount,

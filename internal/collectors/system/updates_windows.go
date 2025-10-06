@@ -8,11 +8,13 @@ import (
 	"time"
 
 	"github.com/ceshihao/windowsupdate"
+	"github.com/go-ole/go-ole"
 )
 
-// Cache update count for 30 minutes to avoid repeated COM calls
+// Cache update count for 6 hours to avoid repeated COM calls
 // Windows Update API is slow on first call (~500-1000ms) but provides accurate data
-// Caching eliminates the overhead for subsequent checks (60-second collection cycles)
+// Background goroutine checks for updates every 6 hours and populates this cache
+// Caching eliminates the overhead for 60-second collection cycles
 var (
 	cachedUpdateCount     int
 	cachedSecurityCount   int
@@ -31,12 +33,12 @@ var (
 // - Official Microsoft API for update checking
 // - Accurate and reliable
 // - First call: 500-1000ms, cached calls: 0ms (instant)
-// - Cached for 30 minutes (updates don't change frequently)
+// - Cached for 6 hours (background check runs every 6 hours)
 func (c *Collector) GetAvailableUpdates(ctx context.Context) (int, error) {
 	updateCacheMutex.Lock()
 	defer updateCacheMutex.Unlock()
 
-	// Return cached value if still fresh (30 minutes)
+	// Return cached value if still fresh (6 hours)
 	if updateCacheInitialized && time.Now().Before(updateCacheExpiry) {
 		c.logger.Debug("Returning cached Windows Update count",
 			"total_updates", cachedUpdateCount,
@@ -46,6 +48,22 @@ func (c *Collector) GetAvailableUpdates(ctx context.Context) (int, error) {
 	}
 
 	c.logger.Debug("Querying Windows Update Agent API for available updates (cache expired or first run)")
+
+	// Initialize COM for this thread/goroutine
+	// COM must be initialized before using any COM objects
+	// COINIT_MULTITHREADED allows concurrent COM calls from multiple goroutines
+	err := ole.CoInitializeEx(0, ole.COINIT_MULTITHREADED)
+	if err != nil {
+		c.logger.Warn("Failed to initialize COM", "error", err)
+		// If COM initialization fails, return cached value if we have one, otherwise 0
+		if updateCacheInitialized {
+			c.logger.Info("Returning stale cached update count due to COM initialization error",
+				"cached_count", cachedUpdateCount)
+			return cachedUpdateCount, nil
+		}
+		return 0, err
+	}
+	defer ole.CoUninitialize()
 
 	// Use Windows Update Agent COM API
 	// Note: COM objects are cleaned up by go-ole's garbage collection
@@ -101,11 +119,11 @@ func (c *Collector) GetAvailableUpdates(ctx context.Context) (int, error) {
 		}
 	}
 
-	// Cache the results for 30 minutes
-	// Windows Update doesn't change frequently, so this is safe
+	// Cache the results for 6 hours
+	// Windows Update doesn't change frequently, aligns with background check interval
 	cachedUpdateCount = updateCount
 	cachedSecurityCount = securityCount
-	updateCacheExpiry = time.Now().Add(30 * time.Minute)
+	updateCacheExpiry = time.Now().Add(6 * time.Hour)
 	updateCacheInitialized = true
 
 	c.logger.Info("Windows Update check completed via COM API",
