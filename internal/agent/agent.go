@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 
@@ -58,6 +59,9 @@ type Agent struct {
 	// Dynamic reporting interval from backend
 	reportingInterval time.Duration
 	httpClient        *http.Client // For config fetching
+
+	// Background update checks
+	updateCheckStop chan struct{}
 }
 
 // MetricTransmitter defines the interface for transmitting metrics to the server.
@@ -124,6 +128,7 @@ func New(cfg *config.Config, logger *slog.Logger) (*Agent, error) {
 		cacheCleanupStop:  cacheCleanupStop,
 		reportingInterval: 60 * time.Second, // Default to 60 seconds
 		httpClient:        sharedhttp.GetClient(), // Use shared HTTP client
+		updateCheckStop:   make(chan struct{}),
 	}
 
 	// Register all collectors
@@ -399,6 +404,9 @@ func (a *Agent) Run(ctx context.Context) error {
 	configRefreshTicker := time.NewTicker(time.Duration(jitterMinutes) * time.Minute)
 	defer configRefreshTicker.Stop()
 
+	// Start background update check goroutine
+	go a.runBackgroundUpdateChecks(ctx)
+
 	// Main collection loop
 	for {
 		select {
@@ -456,6 +464,109 @@ func (a *Agent) Run(ctx context.Context) error {
 			}
 		}
 	}
+}
+
+// runBackgroundUpdateChecks runs system update checks in the background
+// to prevent blocking the main metric collection cycle.
+func (a *Agent) runBackgroundUpdateChecks(ctx context.Context) {
+	a.logger.Info("starting background update check goroutine")
+
+	// Initial delay of 30 seconds to let the agent stabilize
+	select {
+	case <-time.After(30 * time.Second):
+		// Continue to first check
+	case <-ctx.Done():
+		return
+	case <-a.updateCheckStop:
+		return
+	}
+
+	// Perform initial update check
+	a.performUpdateCheck(ctx)
+
+	// Create ticker for periodic checks (every 6 hours)
+	ticker := time.NewTicker(6 * time.Hour)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			a.logger.Info("background update check stopped: context cancelled")
+			return
+		case <-a.updateCheckStop:
+			a.logger.Info("background update check stopped: stop signal received")
+			return
+		case <-ticker.C:
+			a.performUpdateCheck(ctx)
+		}
+	}
+}
+
+// performUpdateCheck executes the system update check and caches results.
+func (a *Agent) performUpdateCheck(ctx context.Context) {
+	// Only perform update checks on supported platforms
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
+		return
+	}
+
+	a.logger.Debug("performing background system update check")
+
+	// Get the system collector from registry
+	systemCollector, err := a.getSystemCollector()
+	if err != nil {
+		a.logger.Warn("system collector not available for update checks", "error", err)
+		return
+	}
+
+	// Use the cache system to store results
+	cacheKey := fmt.Sprintf("system:updates:%s", a.hostname)
+
+	// Get available updates count (platform-specific)
+	updateCount, err := systemCollector.GetAvailableUpdates(ctx)
+	if err != nil {
+		a.logger.Warn("background update check failed", "error", err)
+		return
+	}
+
+	// Get security updates count
+	securityCount, err := systemCollector.GetSecurityUpdates(ctx)
+	if err != nil {
+		a.logger.Warn("background security update check failed", "error", err)
+		// Continue with general updates even if security check fails
+		securityCount = 0
+	}
+
+	// Store in cache with 1-hour expiration
+	updateInfo := map[string]interface{}{
+		"count":          updateCount,
+		"security_count": securityCount,
+		"timestamp":      time.Now(),
+	}
+	cache.Set(cacheKey, updateInfo, 1*time.Hour)
+
+	a.logger.Info("background update check completed",
+		"updates_available", updateCount,
+		"security_updates", securityCount)
+}
+
+// getSystemCollector retrieves the system collector from the registry.
+func (a *Agent) getSystemCollector() (*system.Collector, error) {
+	collectors := a.registry.ListCollectors()
+	for _, name := range collectors {
+		if name == "system" {
+			// Get the collector interface
+			collector := a.registry.GetCollector("system")
+			if collector == nil {
+				return nil, fmt.Errorf("system collector not found in registry")
+			}
+			// Type assert to system.Collector
+			if sysCollector, ok := collector.(*system.Collector); ok {
+				return sysCollector, nil
+			}
+			return nil, fmt.Errorf("system collector type assertion failed")
+		}
+	}
+	return nil, fmt.Errorf("system collector not registered")
 }
 
 // collectAndTransmit performs a single collection cycle and transmits metrics.
@@ -607,6 +718,11 @@ func (a *Agent) Shutdown(ctx context.Context) error {
 	// Stop cache cleanup
 	if a.cacheCleanupStop != nil {
 		close(a.cacheCleanupStop)
+	}
+
+	// Stop background update checks
+	if a.updateCheckStop != nil {
+		close(a.updateCheckStop)
 	}
 
 	if len(shutdownErrors) > 0 {

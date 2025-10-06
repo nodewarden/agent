@@ -10,9 +10,9 @@ import (
 	"strings"
 )
 
-// getAvailableUpdates returns the number of available system updates on macOS.
+// GetAvailableUpdates returns the number of available system updates on macOS.
 // It safely checks Software Update information without executing commands.
-func (c *Collector) getAvailableUpdates(ctx context.Context) (int, error) {
+func (c *Collector) GetAvailableUpdates(ctx context.Context) (int, error) {
 	// Try multiple methods to get update count
 
 	// Method 1: Check Software Update preference files
@@ -139,9 +139,9 @@ func checkAppStoreUpdates() (int, error) {
 	return 0, os.ErrNotExist
 }
 
-// getSecurityUpdates returns the number of available security updates on macOS.
+// GetSecurityUpdates returns the number of available security updates on macOS.
 // macOS doesn't distinguish between regular and security updates in available data.
-func (c *Collector) getSecurityUpdates(ctx context.Context) (int, error) {
+func (c *Collector) GetSecurityUpdates(ctx context.Context) (int, error) {
 	// macOS doesn't provide separate security update counts
 	// Return 0 as security updates are included in general updates
 	return 0, nil

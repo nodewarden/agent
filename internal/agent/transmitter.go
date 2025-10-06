@@ -300,7 +300,7 @@ func (t *HTTPTransmitter) createPayload(metrics []metrics.Metric) map[string]int
 	
 	// Include latency information for agent_up metric
 	if t.lastLatencyMs > 0 {
-		payload["latency_ms"] = t.lastLatencyMs
+		payload["agent_latency"] = t.lastLatencyMs
 	}
 	
 	return payload

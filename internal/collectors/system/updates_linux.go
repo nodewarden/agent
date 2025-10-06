@@ -13,9 +13,9 @@ import (
 	"time"
 )
 
-// getAvailableUpdates returns the number of available system updates on Linux.
+// GetAvailableUpdates returns the number of available system updates on Linux.
 // It safely checks package manager databases without executing commands.
-func (c *Collector) getAvailableUpdates(ctx context.Context) (int, error) {
+func (c *Collector) GetAvailableUpdates(ctx context.Context) (int, error) {
 	// Try different package managers in order of prevalence
 
 	// Check for APT (Debian/Ubuntu)
@@ -189,8 +189,8 @@ func getPacmanUpdates() (int, error) {
 	return 0, os.ErrNotExist
 }
 
-// getSecurityUpdates returns the number of available security updates on Linux.
-func (c *Collector) getSecurityUpdates(ctx context.Context) (int, error) {
+// GetSecurityUpdates returns the number of available security updates on Linux.
+func (c *Collector) GetSecurityUpdates(ctx context.Context) (int, error) {
 	// Try different package managers in order of prevalence
 
 	// Check for APT (Debian/Ubuntu)

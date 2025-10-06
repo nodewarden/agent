@@ -97,10 +97,11 @@ func (c *Collector) Collect(ctx context.Context) ([]metrics.Metric, error) {
 		}
 	}
 
-	// Collect update information (only on supported platforms)
+	// Collect update information from cache (populated by background goroutine in agent)
+	// This no longer blocks - we just read cached values if they exist
 	if runtime.GOOS == "linux" || runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
-		if err := c.collectUpdateInfo(ctx, &collectedMetrics); err != nil {
-			c.logger.Warn("failed to collect update info", "error", err)
+		if err := c.collectUpdateInfoFromCache(&collectedMetrics); err != nil {
+			c.logger.Debug("no cached update info available", "error", err)
 		}
 	}
 
@@ -151,45 +152,39 @@ func (c *Collector) collectLoadAverage(ctx context.Context, metrics *[]metrics.M
 	return nil
 }
 
-// collectUpdateInfo gathers available system updates with caching.
-func (c *Collector) collectUpdateInfo(ctx context.Context, metrics *[]metrics.Metric) error {
+// collectUpdateInfoFromCache reads cached update information populated by the background goroutine.
+// This is non-blocking - if cache doesn't exist, we skip the metric (returns error).
+func (c *Collector) collectUpdateInfoFromCache(metrics *[]metrics.Metric) error {
 	cacheKey := fmt.Sprintf("system:updates:%s", c.hostname)
 
-	// Check cache first
-	if cached, ok := cache.Get(cacheKey); ok {
+	// Check cache for update info populated by background goroutine
+	cached, ok := cache.Get(cacheKey)
+	if !ok {
+		// Cache not populated yet - background check hasn't run
+		return fmt.Errorf("update cache not populated yet")
+	}
+
+	// Parse cached data (map format from agent goroutine)
+	updateData, ok := cached.(map[string]interface{})
+	if !ok {
+		// Legacy cache format - try old updateInfo struct
 		if info, ok := cached.(*updateInfo); ok {
-			c.logger.Debug("using cached update count", "count", info.Count)
 			c.addGauge(metrics, "system_updates_available_count", float64(info.Count))
+			c.logger.Debug("using legacy cached update count", "count", info.Count)
 			return nil
 		}
+		return fmt.Errorf("invalid cache data format")
 	}
 
-	// Cache miss, check for updates
-	c.logger.Debug("checking for system updates")
-
-	// Check for all available updates
-	updateCount, err := c.getAvailableUpdates(ctx)
-	if err != nil {
-		c.logger.Warn("failed to check for updates", "error", err)
-		// Don't fail collection due to update check failure
-		c.addGauge(metrics, "system_updates_available_count", 0)
-	} else {
-		// Update cache with 1 hour timeout
-		info := &updateInfo{Count: updateCount}
-		cache.Set(cacheKey, info, 1*time.Hour)
-
-		c.addGauge(metrics, "system_updates_available_count", float64(updateCount))
-		c.logger.Debug("updated system update count", "count", updateCount)
+	// Extract counts from map
+	if count, ok := updateData["count"].(int); ok {
+		c.addGauge(metrics, "system_updates_available_count", float64(count))
+		c.logger.Debug("using cached update count from background check", "count", count)
 	}
 
-	// Check for security updates
-	securityCount, err := c.getSecurityUpdates(ctx)
-	if err != nil {
-		c.logger.Warn("failed to check for security updates", "error", err)
-		c.addGauge(metrics, "system_security_updates_count", 0)
-	} else {
+	if securityCount, ok := updateData["security_count"].(int); ok {
 		c.addGauge(metrics, "system_security_updates_count", float64(securityCount))
-		c.logger.Debug("updated security update count", "count", securityCount)
+		c.logger.Debug("using cached security update count from background check", "count", securityCount)
 	}
 
 	return nil

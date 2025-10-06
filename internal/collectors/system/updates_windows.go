@@ -32,7 +32,7 @@ var (
 // - Accurate and reliable
 // - First call: 500-1000ms, cached calls: 0ms (instant)
 // - Cached for 30 minutes (updates don't change frequently)
-func (c *Collector) getAvailableUpdates(ctx context.Context) (int, error) {
+func (c *Collector) GetAvailableUpdates(ctx context.Context) (int, error) {
 	updateCacheMutex.Lock()
 	defer updateCacheMutex.Unlock()
 
@@ -119,7 +119,7 @@ func (c *Collector) getAvailableUpdates(ctx context.Context) (int, error) {
 // getSecurityUpdates returns the number of available security updates on Windows.
 // Security updates are those with MsrcSeverity field set (Critical, Important, Moderate, Low).
 // This data is cached along with total update count for 30 minutes.
-func (c *Collector) getSecurityUpdates(ctx context.Context) (int, error) {
+func (c *Collector) GetSecurityUpdates(ctx context.Context) (int, error) {
 	updateCacheMutex.Lock()
 	defer updateCacheMutex.Unlock()
 
