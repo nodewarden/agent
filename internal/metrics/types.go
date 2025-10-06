@@ -1,5 +1,4 @@
-// Package metrics provides enterprise-grade metric types and interfaces.
-// Eliminates interface{} usage and implements proper error handling patterns.
+// Package metrics provides metric types and interfaces for the Nodewarden agent.
 package metrics
 
 import (
@@ -39,7 +38,6 @@ type Metric struct {
 }
 
 // Collector defines the interface that all metric collectors must implement.
-// Follows enterprise patterns with comprehensive error handling.
 type Collector interface {
 	// Name returns the unique name of this collector.
 	Name() string
@@ -78,8 +76,7 @@ type ConnectionManager interface {
 }
 
 
-// Registry manages a collection of metric collectors and orchestrates
-// their execution with enterprise patterns.
+// Registry manages a collection of metric collectors and orchestrates their execution.
 type Registry interface {
 	// Register adds a collector to the registry with validation.
 	Register(collector Collector) error
@@ -128,88 +125,3 @@ type RegistryStats struct {
 	LastCollectionTime time.Time `json:"last_collection_time"`
 }
 
-// CollectorConfig provides enterprise configuration options for collectors.
-type CollectorConfig struct {
-	// Enabled indicates if the collector should run.
-	Enabled bool `json:"enabled"`
-
-	// Timeout is the maximum time allowed for collection.
-	Timeout time.Duration `json:"timeout"`
-
-	// Retries is the number of retry attempts on failure.
-	Retries int `json:"retries"`
-
-	// RetryDelay is the delay between retry attempts.
-	RetryDelay time.Duration `json:"retry_delay"`
-
-	// Tags are additional labels to add to all metrics from this collector.
-	Tags map[string]string `json:"tags"`
-}
-
-// CollectorResult represents the result of a collection operation.
-type CollectorResult struct {
-	// CollectorName is the name of the collector that produced this result.
-	CollectorName string `json:"collector_name"`
-
-	// Metrics are the collected metrics.
-	Metrics []Metric `json:"metrics"`
-
-	// Error is any error that occurred during collection.
-	Error error `json:"error,omitempty"`
-
-	// Duration is how long the collection took.
-	Duration time.Duration `json:"duration"`
-
-	// Timestamp is when the collection occurred.
-	Timestamp time.Time `json:"timestamp"`
-}
-
-// ValidationError represents a metric validation error with details.
-type ValidationError struct {
-	Field   string `json:"field"`
-	Value   string `json:"value"`
-	Message string `json:"message"`
-}
-
-// Error implements the error interface.
-func (v ValidationError) Error() string {
-	return v.Message
-}
-
-// NewValidationError creates a new validation error.
-func NewValidationError(field, value, message string) ValidationError {
-	return ValidationError{
-		Field:   field,
-		Value:   value,
-		Message: message,
-	}
-}
-
-// MetricLimits defines enterprise limits for metrics.
-type MetricLimits struct {
-	// MaxMetricsPerCollection is the maximum number of metrics per collection cycle.
-	MaxMetricsPerCollection int `json:"max_metrics_per_collection"`
-
-	// MaxLabelCount is the maximum number of labels per metric.
-	MaxLabelCount int `json:"max_label_count"`
-
-	// MaxLabelKeyLength is the maximum length of label keys.
-	MaxLabelKeyLength int `json:"max_label_key_length"`
-
-	// MaxLabelValueLength is the maximum length of label values.
-	MaxLabelValueLength int `json:"max_label_value_length"`
-
-	// MaxMetricNameLength is the maximum length of metric names.
-	MaxMetricNameLength int `json:"max_metric_name_length"`
-}
-
-// DefaultLimits returns sensible enterprise limits.
-func DefaultLimits() MetricLimits {
-	return MetricLimits{
-		MaxMetricsPerCollection: 10000,
-		MaxLabelCount:           20,
-		MaxLabelKeyLength:       100,
-		MaxLabelValueLength:     255,
-		MaxMetricNameLength:     100,
-	}
-}

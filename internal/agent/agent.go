@@ -21,6 +21,7 @@ import (
 	"nodewarden/internal/collectors/disk"
 	"nodewarden/internal/collectors/memory"
 	"nodewarden/internal/collectors/mysql"
+	"nodewarden/internal/collectors/network"
 	"nodewarden/internal/collectors/postgresql"
 	"nodewarden/internal/collectors/process"
 	"nodewarden/internal/collectors/system"
@@ -196,6 +197,19 @@ func (a *Agent) registerCollectors() error {
 			return fmt.Errorf("failed to register disk collector: %w", err)
 		}
 		a.logger.Info("registered disk collector")
+	}
+
+	// Network collector (enabled for network interface monitoring)
+	if a.config.Collectors.Network {
+		networkCollector := network.NewCollector(
+			a.config.Network,
+			a.hostname,
+			network.WithLogger(collectorLogger.With("type", "network")),
+		)
+		if err := a.registry.Register(networkCollector); err != nil {
+			return fmt.Errorf("failed to register network collector: %w", err)
+		}
+		a.logger.Info("registered network collector")
 	}
 
 	// Container collector (enabled when configured)

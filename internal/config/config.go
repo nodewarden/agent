@@ -29,6 +29,9 @@ type Config struct {
 	// Collector flags
 	Collectors CollectorToggles
 
+	// Network configuration
+	Network NetworkConfig
+
 	// Container configuration
 	Container ContainerConfig
 
@@ -163,8 +166,16 @@ type CollectorToggles struct {
 	Memory    bool
 	System    bool
 	Disk      bool
+	Network   bool
 	Container bool
 	VM        bool
+}
+
+// NetworkConfig provides configuration for network monitoring
+type NetworkConfig struct {
+	EnableNetwork        bool
+	MonitoredInterfaces  []string  // Interface names to monitor (empty = auto-detect)
+	ExcludeInterfaces    []string  // Additional interface patterns to exclude
 }
 
 // ContainerConfig provides configuration for container monitoring
@@ -294,6 +305,25 @@ func LoadConfig(filename string) (*Config, error) {
 			config.Collectors.System = value == "true" || value == "yes" || value == "1"
 		case "enable_disk":
 			config.Collectors.Disk = value == "true" || value == "yes" || value == "1"
+		case "enable_network":
+			config.Collectors.Network = value == "true" || value == "yes" || value == "1"
+			config.Network.EnableNetwork = config.Collectors.Network
+		case "network_interfaces":
+			// Parse comma-separated interface names
+			if value != "" {
+				config.Network.MonitoredInterfaces = strings.Split(value, ",")
+				for i := range config.Network.MonitoredInterfaces {
+					config.Network.MonitoredInterfaces[i] = strings.TrimSpace(config.Network.MonitoredInterfaces[i])
+				}
+			}
+		case "network_exclude":
+			// Parse comma-separated exclusion patterns
+			if value != "" {
+				config.Network.ExcludeInterfaces = strings.Split(value, ",")
+				for i := range config.Network.ExcludeInterfaces {
+					config.Network.ExcludeInterfaces[i] = strings.TrimSpace(config.Network.ExcludeInterfaces[i])
+				}
+			}
 		case "enable_containers", "enable_container", "enable_docker":
 			config.Collectors.Container = value == "true" || value == "yes" || value == "1"
 			config.Container.EnableContainers = config.Collectors.Container
@@ -387,8 +417,12 @@ func LoadConfig(filename string) (*Config, error) {
 	config.Collectors.Memory = true
 	config.Collectors.System = true
 	config.Collectors.Disk = true
+	config.Collectors.Network = true
 	config.Collectors.Container = true
 	config.Collectors.VM = true
+
+	// Network configuration defaults
+	config.Network.EnableNetwork = config.Collectors.Network
 
 	// Container configuration defaults
 	config.Container.EnableContainers = config.Collectors.Container
@@ -462,9 +496,14 @@ log_level: info
 # enable_memory: true
 # enable_system: true
 # enable_disk: true
+# enable_network: true
 # enable_containers: true
 # enable_vms: true
 # enable_process_monitoring: true
+
+# Network monitoring options
+# network_interfaces: eth0,eth1  # Specific interfaces to monitor (empty = auto-detect)
+# network_exclude: wg*,tun*      # Additional patterns to exclude
 
 # Container monitoring options
 # container_runtime: auto
