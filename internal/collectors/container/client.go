@@ -1,4 +1,4 @@
-// Package container provides container monitoring functionality for the Nodewarden agent.
+// Package container provides container monitoring functionality for the Netwarden agent.
 // It supports multiple container runtimes through a common interface.
 package container
 

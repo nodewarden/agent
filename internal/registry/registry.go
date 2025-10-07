@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"nodewarden/internal/collectors/pool"
-	"nodewarden/internal/metrics"
+	"netwarden/internal/collectors/pool"
+	"netwarden/internal/metrics"
 )
 
 // Registry is a simplified collector registry for managing metric collectors.

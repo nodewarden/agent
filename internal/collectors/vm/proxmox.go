@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 	
-	"nodewarden/internal/config"
+	"netwarden/internal/config"
 )
 
 // ProxmoxClient implements HypervisorClient for Proxmox VE.

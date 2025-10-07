@@ -1,4 +1,4 @@
-// Package mysql provides MySQL/MariaDB metrics collection for the Nodewarden agent.
+// Package mysql provides MySQL/MariaDB metrics collection for the Netwarden agent.
 package mysql
 
 import (
@@ -13,8 +13,8 @@ import (
 	"time"
 	
 	_ "github.com/go-sql-driver/mysql" // MySQL driver
-	"nodewarden/internal/config"
-	"nodewarden/internal/metrics"
+	"netwarden/internal/config"
+	"netwarden/internal/metrics"
 )
 
 // mysqlCache provides caching for MySQL stats to reduce query load.

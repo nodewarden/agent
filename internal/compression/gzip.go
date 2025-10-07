@@ -1,4 +1,4 @@
-// Package compression provides data compression utilities for the Nodewarden agent
+// Package compression provides data compression utilities for the Netwarden agent
 // with configurable compression levels and performance metrics.
 package compression
 

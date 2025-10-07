@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"nodewarden/internal/metrics"
+	"netwarden/internal/metrics"
 )
 
 // BaseCollector provides common functionality for all collectors.

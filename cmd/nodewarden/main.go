@@ -1,4 +1,4 @@
-// Package main provides the Nodewarden agent entry point with graceful shutdown,
+// Package main provides the Netwarden agent entry point with graceful shutdown,
 // proper logging, and production-ready error handling.
 package main
 
@@ -15,8 +15,8 @@ import (
 	"syscall"
 	"time"
 
-	"nodewarden/internal/agent"
-	"nodewarden/internal/config"
+	"netwarden/internal/agent"
+	"netwarden/internal/config"
 )
 
 var (
@@ -33,15 +33,15 @@ func getDefaultConfigPath() string {
 		executable, err := os.Executable()
 		if err != nil {
 			// Fallback to current directory if we can't get executable path
-			return "nodewarden.conf"
+			return "netwarden.conf"
 		}
 
 		execDir := filepath.Dir(executable)
-		return filepath.Join(execDir, "nodewarden.conf")
+		return filepath.Join(execDir, "netwarden.conf")
 	}
 
 	// On Unix systems, use the traditional /etc location
-	return "/etc/nodewarden/nodewarden.conf"
+	return "/etc/netwarden/netwarden.conf"
 }
 
 func main() {
@@ -65,7 +65,7 @@ func main() {
 
 	// Handle version flag
 	if *showVersion {
-		fmt.Printf("Nodewarden Agent\n")
+		fmt.Printf("Netwarden Agent\n")
 		fmt.Printf("Version:    %s\n", version)
 		fmt.Printf("Build Date: %s\n", buildDate)
 		fmt.Printf("Git Commit: %s\n", gitCommit)
@@ -86,7 +86,7 @@ func main() {
 		fmt.Println("Please edit the file with your credentials and restart the agent:")
 		fmt.Printf("  1. Set your tenant_id (10-character string)\n")
 		fmt.Printf("  2. Set your api_key (nw_sk_...)\n")
-		fmt.Printf("  3. Start the agent: nodewarden\n")
+		fmt.Printf("  3. Start the agent: netwarden\n")
 		os.Exit(0)
 	}
 
@@ -117,7 +117,7 @@ func main() {
 		if strings.Contains(err.Error(), "no such file or directory") {
 			fmt.Fprintf(os.Stderr, "Error: Configuration file not found at %s\n", *configFile)
 			fmt.Println("To create a configuration file, run:")
-			fmt.Println("  nodewarden --create-config")
+			fmt.Println("  netwarden --create-config")
 			fmt.Println("Then edit the file to provide your tenant_id and api_key.")
 			os.Exit(1)
 		}
@@ -130,7 +130,7 @@ func main() {
 	logger := setupLoggingWithFile(cfg.LogLevel, "json", cfg.LogFile)
 
 	// Log startup information
-	logger.Info("starting Nodewarden agent",
+	logger.Info("starting Netwarden agent",
 		"version", version,
 		"config_file", *configFile,
 	)
@@ -141,7 +141,7 @@ func main() {
 
 // runConsoleMode runs the agent in console mode with signal handling.
 func runConsoleMode(cfg *config.Config, logger *slog.Logger) {
-	logger.Info("running Nodewarden in console mode")
+	logger.Info("running Netwarden in console mode")
 
 	// Create main context for graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
@@ -152,7 +152,7 @@ func runConsoleMode(cfg *config.Config, logger *slog.Logger) {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	// Create and start the agent
-	nodewardenAgent, err := agent.New(cfg, logger, version)
+	netwardenAgent, err := agent.New(cfg, logger, version)
 	if err != nil {
 		logger.Error("failed to create agent", "error", err)
 		os.Exit(1)
@@ -161,7 +161,7 @@ func runConsoleMode(cfg *config.Config, logger *slog.Logger) {
 	// Start agent in goroutine
 	agentErrors := make(chan error, 1)
 	go func() {
-		agentErrors <- nodewardenAgent.Run(ctx)
+		agentErrors <- netwardenAgent.Run(ctx)
 	}()
 
 	// Wait for shutdown signal or agent error
@@ -174,7 +174,7 @@ func runConsoleMode(cfg *config.Config, logger *slog.Logger) {
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer shutdownCancel()
 
-		if err := nodewardenAgent.Shutdown(shutdownCtx); err != nil {
+		if err := netwardenAgent.Shutdown(shutdownCtx); err != nil {
 			logger.Error("error during graceful shutdown", "error", err)
 			os.Exit(1)
 		}
@@ -256,21 +256,21 @@ func getLogFilePath() string {
 		executable, err := os.Executable()
 		if err != nil {
 			// Fallback to current directory if we can't get executable path
-			return "nodewarden.log"
+			return "netwarden.log"
 		}
 
 		execDir := filepath.Dir(executable)
-		return filepath.Join(execDir, "nodewarden.log")
+		return filepath.Join(execDir, "netwarden.log")
 	}
 
-	// On Unix systems, prefer /var/log/nodewarden/nodewarden.log if we have permissions
-	logDir := "/var/log/nodewarden"
-	preferredPath := filepath.Join(logDir, "nodewarden.log")
+	// On Unix systems, prefer /var/log/netwarden/netwarden.log if we have permissions
+	logDir := "/var/log/netwarden"
+	preferredPath := filepath.Join(logDir, "netwarden.log")
 
 	// Try to create the log directory if it doesn't exist
 	if err := os.MkdirAll(logDir, 0755); err == nil {
 		// Test if we can write to the directory
-		testFile := filepath.Join(logDir, ".nodewarden_test")
+		testFile := filepath.Join(logDir, ".netwarden_test")
 		if file, err := os.OpenFile(testFile, os.O_CREATE|os.O_WRONLY, 0644); err == nil {
 			defer func() {
 				file.Close()
@@ -280,8 +280,8 @@ func getLogFilePath() string {
 		}
 	}
 
-	// Fall back to /tmp/nodewarden.log
-	return "/tmp/nodewarden.log"
+	// Fall back to /tmp/netwarden.log
+	return "/tmp/netwarden.log"
 }
 
 // runDaemon forks the process to run in the background.
@@ -320,7 +320,7 @@ func runDaemon() error {
 		return fmt.Errorf("failed to start background process: %v", err)
 	}
 	
-	fmt.Printf("Nodewarden agent started in daemon mode (PID: %d)\n", proc.Pid)
+	fmt.Printf("Netwarden agent started in daemon mode (PID: %d)\n", proc.Pid)
 	fmt.Printf("Logs will be written to: %s\n", getLogFilePath())
 	
 	// Release the process so it can run independently

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"nodewarden/internal/metrics"
+	"netwarden/internal/metrics"
 )
 
 // CollectorTask represents a collection task for a specific collector.

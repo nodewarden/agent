@@ -1,4 +1,4 @@
-// Package errors provides structured error types and handling for the Nodewarden agent
+// Package errors provides structured error types and handling for the Netwarden agent
 // with categorization for retryable vs fatal errors and context propagation.
 package errors
 

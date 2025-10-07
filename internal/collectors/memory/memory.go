@@ -9,7 +9,7 @@ import (
 
 	"github.com/shirou/gopsutil/v4/mem"
 
-	"nodewarden/internal/metrics"
+	"netwarden/internal/metrics"
 )
 
 // Collector implements metrics.Collector for memory metrics.

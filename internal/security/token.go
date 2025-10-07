@@ -1,4 +1,4 @@
-// Package security provides security utilities for the Nodewarden agent
+// Package security provides security utilities for the Netwarden agent
 // including token validation, masking, and secure storage.
 package security
 

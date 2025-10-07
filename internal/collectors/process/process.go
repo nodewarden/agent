@@ -1,4 +1,4 @@
-// Package process provides process monitoring for the Nodewarden agent.
+// Package process provides process monitoring for the Netwarden agent.
 package process
 
 import (
@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 	
-	"nodewarden/internal/config"
-	"nodewarden/internal/metrics"
+	"netwarden/internal/config"
+	"netwarden/internal/metrics"
 )
 
 // ProcessToMonitor represents a process configuration from the API.
@@ -92,7 +92,7 @@ func WithLogger(logger *slog.Logger) CollectorOption {
 func NewCollector(cfg config.ProcessConfig, hostname string, apiKey string, serverURL string, opts ...CollectorOption) *Collector {
 	// Hardcode the API URL since we don't want users to configure it
 	if serverURL == "" {
-		serverURL = "https://api.nodewarden.com"
+		serverURL = "https://api.netwarden.com"
 	}
 
 	collector := &Collector{
@@ -136,7 +136,7 @@ func (c *Collector) fetchProcessConfig(ctx context.Context) error {
 	}
 	
 	req.Header.Set("Authorization", "Bearer "+c.apiKey)
-	req.Header.Set("User-Agent", "Nodewarden-Agent/1.0.0")
+	req.Header.Set("User-Agent", "Netwarden-Agent/1.0.0")
 	
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

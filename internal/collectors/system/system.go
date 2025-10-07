@@ -14,9 +14,9 @@ import (
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/load"
 
-	"nodewarden/internal/cache"
-	"nodewarden/internal/config"
-	"nodewarden/internal/metrics"
+	"netwarden/internal/cache"
+	"netwarden/internal/config"
+	"netwarden/internal/metrics"
 )
 
 // updateInfo represents update check result.

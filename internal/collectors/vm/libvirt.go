@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 	
-	"nodewarden/internal/config"
+	"netwarden/internal/config"
 )
 
 // LibvirtClient implements HypervisorClient for libvirt-based hypervisors.

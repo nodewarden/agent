@@ -1,7 +1,7 @@
 //go:build linux
 // +build linux
 
-// Package vm provides VM monitoring functionality for the Nodewarden agent.
+// Package vm provides VM monitoring functionality for the Netwarden agent.
 // It supports multiple hypervisors through a common interface.
 // VM monitoring is only supported on Linux systems.
 package vm

@@ -1,4 +1,4 @@
-// Package postgresql provides PostgreSQL metrics collection for the Nodewarden agent.
+// Package postgresql provides PostgreSQL metrics collection for the Netwarden agent.
 package postgresql
 
 import (
@@ -12,8 +12,8 @@ import (
 	"time"
 	
 	_ "github.com/lib/pq" // PostgreSQL driver
-	"nodewarden/internal/config"
-	"nodewarden/internal/metrics"
+	"netwarden/internal/config"
+	"netwarden/internal/metrics"
 )
 
 // pgCache provides caching for PostgreSQL stats to reduce query load.

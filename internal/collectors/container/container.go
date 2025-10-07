@@ -1,4 +1,4 @@
-// Package container provides container metrics collection for the Nodewarden agent.
+// Package container provides container metrics collection for the Netwarden agent.
 package container
 
 import (
@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 	
-	"nodewarden/internal/config"
-	"nodewarden/internal/metrics"
+	"netwarden/internal/config"
+	"netwarden/internal/metrics"
 )
 
 

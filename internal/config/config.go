@@ -1,4 +1,4 @@
-// Package config provides simplified configuration for the Nodewarden agent.
+// Package config provides simplified configuration for the Netwarden agent.
 package config
 
 import (
@@ -473,7 +473,7 @@ func LoadConfig(filename string) (*Config, error) {
 
 // CreateConfigFile creates a minimal example configuration file.
 func CreateConfigFile(filename string) error {
-	content := `# Nodewarden Agent Configuration
+	content := `# Netwarden Agent Configuration
 # Simple key-value configuration file
 
 # Required: Your tenant/customer ID
@@ -488,7 +488,7 @@ api_key: nw_sk_CHANGE_ME
 # Optional: Log level (debug, info, warn, error) (default: info)
 log_level: info
 
-# Optional: Log file path (default: .\nodewarden.log on Windows, /var/log/nodewarden.log on Linux)
+# Optional: Log file path (default: .\netwarden.log on Windows, /var/log/netwarden.log on Linux)
 # logfile: /path/to/custom/logfile.log
 
 # Optional: Enable/disable collectors (all enabled by default except mysql/postgresql)

@@ -6,7 +6,7 @@ package agent
 import (
 	"fmt"
 	"log/slog"
-	"nodewarden/internal/collectors/vm"
+	"netwarden/internal/collectors/vm"
 )
 
 // registerVMCollector registers the VM collector on Linux systems only.

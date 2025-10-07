@@ -5,8 +5,8 @@ package vm
 
 import (
 	"context"
-	"nodewarden/internal/config"
-	"nodewarden/internal/metrics"
+	"netwarden/internal/config"
+	"netwarden/internal/metrics"
 	"log/slog"
 )
 

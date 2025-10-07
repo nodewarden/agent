@@ -1,7 +1,7 @@
 //go:build linux
 // +build linux
 
-// Package vm provides VM metrics collection for the Nodewarden agent.
+// Package vm provides VM metrics collection for the Netwarden agent.
 // VM monitoring is only supported on Linux systems.
 package vm
 
@@ -11,9 +11,9 @@ import (
 	"log/slog"
 	"time"
 
-	"nodewarden/internal/cache"
-	"nodewarden/internal/config"
-	"nodewarden/internal/metrics"
+	"netwarden/internal/cache"
+	"netwarden/internal/config"
+	"netwarden/internal/metrics"
 )
 
 

@@ -1,7 +1,7 @@
 //go:build windows
 // +build windows
 
-// Package main provides Windows Service Control Manager integration for the Nodewarden agent.
+// Package main provides Windows Service Control Manager integration for the Netwarden agent.
 package main
 
 import (
@@ -14,14 +14,14 @@ import (
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
 
-	"nodewarden/internal/agent"
-	"nodewarden/internal/config"
+	"netwarden/internal/agent"
+	"netwarden/internal/config"
 )
 
-const serviceName = "Nodewarden"
+const serviceName = "Netwarden"
 
-// nodewardenService implements the Windows service interface.
-type nodewardenService struct {
+// netwardenService implements the Windows service interface.
+type netwardenService struct {
 	configFile  string
 	config      *config.Config
 	logger      *slog.Logger
@@ -33,7 +33,7 @@ type nodewardenService struct {
 
 // Execute is called by the Windows Service Control Manager when the service is started.
 // It handles service control requests (start, stop, pause, continue, etc.).
-func (s *nodewardenService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
+func (s *netwardenService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
 
 	// CRITICAL: Report to Windows SCM immediately to avoid timeout
@@ -42,7 +42,7 @@ func (s *nodewardenService) Execute(args []string, r <-chan svc.ChangeRequest, c
 	// Try to open event log for early debugging (but don't fail if it doesn't work)
 	elog, elogErr := eventlog.Open(serviceName)
 	if elogErr == nil {
-		elog.Info(1, "Nodewarden service Execute() called, loading configuration...")
+		elog.Info(1, "Netwarden service Execute() called, loading configuration...")
 		defer elog.Close()
 	}
 
@@ -64,7 +64,7 @@ func (s *nodewardenService) Execute(args []string, r <-chan svc.ChangeRequest, c
 	logger := setupLoggingWithFile(cfg.LogLevel, "json", cfg.LogFile)
 	s.logger = logger
 
-	s.logger.Info("Nodewarden Windows service starting",
+	s.logger.Info("Netwarden Windows service starting",
 		"config_file", s.configFile,
 		"tenant_id", cfg.TenantID[:6]+"****", // Log partial tenant ID for debugging
 	)
@@ -83,7 +83,7 @@ func (s *nodewardenService) Execute(args []string, r <-chan svc.ChangeRequest, c
 		return true, 1
 	}
 
-	s.logger.Info("Nodewarden Windows service initialized successfully")
+	s.logger.Info("Netwarden Windows service initialized successfully")
 	if elog != nil {
 		elog.Info(1, "Agent created successfully, starting service...")
 	}
@@ -101,7 +101,7 @@ func (s *nodewardenService) Execute(args []string, r <-chan svc.ChangeRequest, c
 
 	// Set service status to running
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
-	s.logger.Info("Nodewarden Windows service started and running")
+	s.logger.Info("Netwarden Windows service started and running")
 	if elog != nil {
 		elog.Info(1, "Service is now running and accepting control requests")
 	}
@@ -190,12 +190,12 @@ func runService(configFile string, isDebug bool) error {
 		elog := debug.New(serviceName)
 		defer elog.Close()
 
-		fmt.Printf("Running Nodewarden in Windows service debug mode\n")
+		fmt.Printf("Running Netwarden in Windows service debug mode\n")
 
 		run := svc.Run
 		run = debug.Run
 
-		service := &nodewardenService{
+		service := &netwardenService{
 			configFile: configFile,
 		}
 
@@ -208,9 +208,9 @@ func runService(configFile string, isDebug bool) error {
 		}
 		defer elog.Close()
 
-		elog.Info(1, "starting Nodewarden Windows service")
+		elog.Info(1, "starting Netwarden Windows service")
 
-		service := &nodewardenService{
+		service := &netwardenService{
 			configFile: configFile,
 		}
 

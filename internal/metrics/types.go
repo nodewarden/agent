@@ -1,4 +1,4 @@
-// Package metrics provides metric types and interfaces for the Nodewarden agent.
+// Package metrics provides metric types and interfaces for the Netwarden agent.
 package metrics
 
 import (

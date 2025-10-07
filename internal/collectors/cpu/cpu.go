@@ -10,7 +10,7 @@ import (
 
 	"github.com/shirou/gopsutil/v4/cpu"
 
-	"nodewarden/internal/metrics"
+	"netwarden/internal/metrics"
 )
 
 // Collector implements metrics.Collector for CPU metrics.

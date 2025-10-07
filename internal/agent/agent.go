@@ -1,4 +1,4 @@
-// Package agent provides the main Nodewarden agent implementation
+// Package agent provides the main Netwarden agent implementation
 // that coordinates metric collection, processing, and transmission.
 package agent
 
@@ -15,23 +15,23 @@ import (
 	"sync"
 	"time"
 
-	"nodewarden/internal/cache"
-	"nodewarden/internal/collectors/container"
-	"nodewarden/internal/collectors/cpu"
-	"nodewarden/internal/collectors/disk"
-	"nodewarden/internal/collectors/memory"
-	"nodewarden/internal/collectors/mysql"
-	"nodewarden/internal/collectors/network"
-	"nodewarden/internal/collectors/postgresql"
-	"nodewarden/internal/collectors/process"
-	"nodewarden/internal/collectors/system"
-	"nodewarden/internal/config"
-	sharedhttp "nodewarden/internal/http"
-	"nodewarden/internal/metrics"
-	"nodewarden/internal/registry"
+	"netwarden/internal/cache"
+	"netwarden/internal/collectors/container"
+	"netwarden/internal/collectors/cpu"
+	"netwarden/internal/collectors/disk"
+	"netwarden/internal/collectors/memory"
+	"netwarden/internal/collectors/mysql"
+	"netwarden/internal/collectors/network"
+	"netwarden/internal/collectors/postgresql"
+	"netwarden/internal/collectors/process"
+	"netwarden/internal/collectors/system"
+	"netwarden/internal/config"
+	sharedhttp "netwarden/internal/http"
+	"netwarden/internal/metrics"
+	"netwarden/internal/registry"
 )
 
-// Agent represents the main Nodewarden agent.
+// Agent represents the main Netwarden agent.
 type Agent struct {
 	config   *config.Config
 	logger   *slog.Logger
@@ -71,7 +71,7 @@ type MetricTransmitter interface {
 	Close() error
 }
 
-// New creates a new Nodewarden agent instance.
+// New creates a new Netwarden agent instance.
 func New(cfg *config.Config, logger *slog.Logger, version string) (*Agent, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("configuration cannot be nil")
@@ -137,7 +137,7 @@ func New(cfg *config.Config, logger *slog.Logger, version string) (*Agent, error
 		return nil, fmt.Errorf("failed to register collectors: %w", err)
 	}
 
-	logger.Info("Nodewarden agent created successfully",
+	logger.Info("Netwarden agent created successfully",
 		"hostname", hostname,
 		"collectors", reg.ListCollectors())
 
@@ -288,13 +288,13 @@ func (a *Agent) FetchRemoteConfig(ctx context.Context) error {
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(reqCtx, "GET",
-		"https://api.nodewarden.com/agent/config", nil)
+		"https://api.netwarden.com/agent/config", nil)
 	if err != nil {
 		return fmt.Errorf("creating config request: %w", err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+a.config.APIKey)
-	req.Header.Set("User-Agent", "Nodewarden-Agent/1.0.0")
+	req.Header.Set("User-Agent", "Netwarden-Agent/1.0.0")
 
 	resp, err := a.httpClient.Do(req)
 	if err != nil {
@@ -392,7 +392,7 @@ func (a *Agent) Run(ctx context.Context) error {
 	currentInterval := a.reportingInterval
 	a.mu.RUnlock()
 
-	a.logger.Info("starting Nodewarden agent",
+	a.logger.Info("starting Netwarden agent",
 		"collection_interval", currentInterval.String(),
 		"buffer_size", a.config.Buffer.MaxSize)
 
@@ -621,7 +621,7 @@ func (a *Agent) collectAndTransmit(ctx context.Context) error {
 	previousFailures := a.consecutiveFailures
 	if wasFailedBefore {
 		// Log recovery message at INFO level so it's visible
-		a.logger.Info("CONNECTION RESTORED: Successfully reconnected to Nodewarden backend and resumed metric transmission",
+		a.logger.Info("CONNECTION RESTORED: Successfully reconnected to Netwarden backend and resumed metric transmission",
 			"previous_consecutive_failures", previousFailures,
 			"downtime_estimate", fmt.Sprintf("~%d minutes", previousFailures))
 		a.lastTransmissionFailed = false
@@ -712,7 +712,7 @@ func (a *Agent) Stop() {
 
 // Shutdown performs graceful shutdown with timeout.
 func (a *Agent) Shutdown(ctx context.Context) error {
-	a.logger.Info("shutting down Nodewarden agent")
+	a.logger.Info("shutting down Netwarden agent")
 
 	// Stop the main loop
 	a.Stop()
@@ -743,7 +743,7 @@ func (a *Agent) Shutdown(ctx context.Context) error {
 		return fmt.Errorf("shutdown errors: %v", shutdownErrors)
 	}
 
-	a.logger.Info("Nodewarden agent shutdown completed")
+	a.logger.Info("Netwarden agent shutdown completed")
 	return nil
 }
 

@@ -12,7 +12,7 @@ import (
 
 	"github.com/shirou/gopsutil/v4/disk"
 
-	"nodewarden/internal/metrics"
+	"netwarden/internal/metrics"
 )
 
 // Collector implements metrics.Collector for disk metrics.

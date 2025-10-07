@@ -1,4 +1,4 @@
-// Package agent provides simplified metric transmission to the Nodewarden backend.
+// Package agent provides simplified metric transmission to the Netwarden backend.
 package agent
 
 import (
@@ -13,16 +13,16 @@ import (
 	"sync"
 	"time"
 
-	"nodewarden/internal/config"
-	sharedhttp "nodewarden/internal/http"
-	"nodewarden/internal/metrics"
-	"nodewarden/internal/resilience"
+	"netwarden/internal/config"
+	sharedhttp "netwarden/internal/http"
+	"netwarden/internal/metrics"
+	"netwarden/internal/resilience"
 )
 
 // APIEndpoint is the hardcoded endpoint for metric submission
-const APIEndpoint = "https://api.nodewarden.com/agent/data"
+const APIEndpoint = "https://api.netwarden.com/agent/data"
 
-// HTTPTransmitter sends metrics to the Nodewarden backend using standard HTTP.
+// HTTPTransmitter sends metrics to the Netwarden backend using standard HTTP.
 type HTTPTransmitter struct {
 	config        *config.Config
 	logger        *slog.Logger
@@ -184,7 +184,7 @@ func (t *HTTPTransmitter) sendRequest(ctx context.Context, jsonData []byte, retr
 	// Set headers
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+t.config.APIKey)
-	req.Header.Set("User-Agent", fmt.Sprintf("Nodewarden-Agent/%s", t.version))
+	req.Header.Set("User-Agent", fmt.Sprintf("Netwarden-Agent/%s", t.version))
 
 	// Measure request latency
 	startTime := time.Now()

@@ -1,4 +1,4 @@
-# Nodewarden Agent
+# Netwarden Agent
 
 ```
   _   _           _                              _
@@ -10,13 +10,13 @@
 
 ```
 
-**Enterprise-grade infrastructure monitoring agent** - A lightweight, secure, and high-performance monitoring agent written in Go that collects system, container, database, and custom metrics for the Nodewarden monitoring platform.
+**Enterprise-grade infrastructure monitoring agent** - A lightweight, secure, and high-performance monitoring agent written in Go that collects system, container, database, and custom metrics for the Netwarden monitoring platform.
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/nodewarden/nodewarden-agent/releases)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/netwarden/netwarden-agent/releases)
 [![Go Version](https://img.shields.io/badge/go-1.21%2B-00ADD8)](https://golang.org)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20windows%20%7C%20macos-lightgrey)](https://nodewarden.com)
-[![Architecture](https://img.shields.io/badge/arch-amd64%20%7C%20arm64%20%7C%20armv7-orange)](https://nodewarden.com)
+[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20windows%20%7C%20macos-lightgrey)](https://netwarden.com)
+[![Architecture](https://img.shields.io/badge/arch-amd64%20%7C%20arm64%20%7C%20armv7-orange)](https://netwarden.com)
 
 ## ✨ Key Features
 
@@ -34,7 +34,7 @@
 ### One-Line Installation
 
 ```bash
-curl -sSL https://get.nodewarden.com/install.sh | sudo bash -s -- --tenant-id YOUR_TENANT_ID --api-key YOUR_API_KEY
+curl -sSL https://get.netwarden.com/install.sh | sudo bash -s -- --tenant-id YOUR_TENANT_ID --api-key YOUR_API_KEY
 ```
 
 This will:
@@ -42,7 +42,7 @@ This will:
 2. ✅ Download and install the appropriate package
 3. ✅ Configure the agent with your API key
 4. ✅ Start the monitoring service
-5. ✅ Begin sending metrics to Nodewarden
+5. ✅ Begin sending metrics to Netwarden
 
 ## 📦 Installation Methods
 
@@ -52,10 +52,10 @@ The install script automatically detects your system and installs the appropriat
 
 ```bash
 # Download and run installer
-curl -sSL https://get.nodewarden.com/install.sh -o install.sh
+curl -sSL https://get.netwarden.com/install.sh -o install.sh
 chmod +x install.sh
 
-# Install with your credentials (get from Nodewarden dashboard)
+# Install with your credentials (get from Netwarden dashboard)
 sudo ./install.sh --tenant-id YOUR_TENANT_ID --api-key YOUR_API_KEY
 
 # Additional options
@@ -70,85 +70,85 @@ sudo ./install.sh --test                                    # Test mode only
 
 ```bash
 # Import GPG key
-sudo rpm --import https://get.nodewarden.com/rpm/RPM-GPG-KEY-nodewarden
+sudo rpm --import https://get.netwarden.com/rpm/RPM-GPG-KEY-netwarden
 
 # Add repository
-cat <<EOF | sudo tee /etc/yum.repos.d/nodewarden.repo
-[nodewarden]
-name=Nodewarden Agent Repository
-baseurl=https://get.nodewarden.com/rpm/\$basearch
+cat <<EOF | sudo tee /etc/yum.repos.d/netwarden.repo
+[netwarden]
+name=Netwarden Agent Repository
+baseurl=https://get.netwarden.com/rpm/\$basearch
 enabled=1
 gpgcheck=1
-gpgkey=https://get.nodewarden.com/rpm/RPM-GPG-KEY-nodewarden
+gpgkey=https://get.netwarden.com/rpm/RPM-GPG-KEY-netwarden
 EOF
 
 # Install agent
-sudo yum install -y nodewarden  # or dnf on Fedora
+sudo yum install -y netwarden  # or dnf on Fedora
 
-# Quick configuration one-liner (replace with your actual values from Nodewarden dashboard)
-TENANT_ID="your-tenant-id" API_KEY="your-api-key" && sudo sed -i "s/^tenant_id:.*/tenant_id: $TENANT_ID/; s/^api_key:.*/api_key: $API_KEY/" /etc/nodewarden/nodewarden.conf && sudo systemctl start nodewarden
+# Quick configuration one-liner (replace with your actual values from Netwarden dashboard)
+TENANT_ID="your-tenant-id" API_KEY="your-api-key" && sudo sed -i "s/^tenant_id:.*/tenant_id: $TENANT_ID/; s/^api_key:.*/api_key: $API_KEY/" /etc/netwarden/netwarden.conf && sudo systemctl start netwarden
 
 # Or configure manually
-sudo nano /etc/nodewarden/nodewarden.conf
-sudo systemctl enable --now nodewarden
+sudo nano /etc/netwarden/netwarden.conf
+sudo systemctl enable --now netwarden
 ```
 
 #### Direct RPM Installation
 
 ```bash
 # Download latest package (choose your architecture)
-curl -LO https://get.nodewarden.com/nodewarden-latest-x86_64.rpm     # Intel/AMD 64-bit
-curl -LO https://get.nodewarden.com/nodewarden-latest-aarch64.rpm    # ARM 64-bit
-curl -LO https://get.nodewarden.com/nodewarden-latest-armv7hl.rpm    # ARM 32-bit
+curl -LO https://get.netwarden.com/netwarden-latest-x86_64.rpm     # Intel/AMD 64-bit
+curl -LO https://get.netwarden.com/netwarden-latest-aarch64.rpm    # ARM 64-bit
+curl -LO https://get.netwarden.com/netwarden-latest-armv7hl.rpm    # ARM 32-bit
 
 # Import GPG key and verify
-sudo rpm --import https://get.nodewarden.com/rpm/RPM-GPG-KEY-nodewarden
-rpm --checksig nodewarden-latest-x86_64.rpm  # Or your downloaded architecture
+sudo rpm --import https://get.netwarden.com/rpm/RPM-GPG-KEY-netwarden
+rpm --checksig netwarden-latest-x86_64.rpm  # Or your downloaded architecture
 
 # Install
-sudo rpm -ivh nodewarden-latest-x86_64.rpm  # Or your downloaded architecture
+sudo rpm -ivh netwarden-latest-x86_64.rpm  # Or your downloaded architecture
 
 # Quick configuration one-liner (replace with your actual values)
-TENANT_ID="your-tenant-id" API_KEY="your-api-key" && sudo sed -i "s/^tenant_id:.*/tenant_id: $TENANT_ID/; s/^api_key:.*/api_key: $API_KEY/" /etc/nodewarden/nodewarden.conf && sudo systemctl start nodewarden
+TENANT_ID="your-tenant-id" API_KEY="your-api-key" && sudo sed -i "s/^tenant_id:.*/tenant_id: $TENANT_ID/; s/^api_key:.*/api_key: $API_KEY/" /etc/netwarden/netwarden.conf && sudo systemctl start netwarden
 ```
 
 #### DEB-based Systems (Ubuntu, Debian)
 
 ```bash
 # Import GPG key
-curl -fsSL https://get.nodewarden.com/deb/KEY.gpg | sudo gpg --dearmor -o /usr/share/keyrings/nodewarden.gpg
+curl -fsSL https://get.netwarden.com/deb/KEY.gpg | sudo gpg --dearmor -o /usr/share/keyrings/netwarden.gpg
 
 # Add repository
-echo "deb [signed-by=/usr/share/keyrings/nodewarden.gpg] https://get.nodewarden.com/deb stable main" | sudo tee /etc/apt/sources.list.d/nodewarden.list
+echo "deb [signed-by=/usr/share/keyrings/netwarden.gpg] https://get.netwarden.com/deb stable main" | sudo tee /etc/apt/sources.list.d/netwarden.list
 
 # Update and install
 sudo apt update
-sudo apt install -y nodewarden
+sudo apt install -y netwarden
 
-# Quick configuration one-liner (replace with your actual values from Nodewarden dashboard)
-TENANT_ID="your-tenant-id" API_KEY="your-api-key" && sudo sed -i "s/^tenant_id:.*/tenant_id: $TENANT_ID/; s/^api_key:.*/api_key: $API_KEY/" /etc/nodewarden/nodewarden.conf && sudo systemctl start nodewarden
+# Quick configuration one-liner (replace with your actual values from Netwarden dashboard)
+TENANT_ID="your-tenant-id" API_KEY="your-api-key" && sudo sed -i "s/^tenant_id:.*/tenant_id: $TENANT_ID/; s/^api_key:.*/api_key: $API_KEY/" /etc/netwarden/netwarden.conf && sudo systemctl start netwarden
 
 # Or configure manually
-sudo nano /etc/nodewarden/nodewarden.conf
-sudo systemctl enable --now nodewarden
+sudo nano /etc/netwarden/netwarden.conf
+sudo systemctl enable --now netwarden
 ```
 
 #### Direct DEB Installation
 
 ```bash
 # Download latest package (choose your architecture)
-curl -LO https://get.nodewarden.com/nodewarden-latest-amd64.deb      # Intel/AMD 64-bit
-curl -LO https://get.nodewarden.com/nodewarden-latest-arm64.deb      # ARM 64-bit
-curl -LO https://get.nodewarden.com/nodewarden-latest-armhf.deb      # ARM 32-bit
+curl -LO https://get.netwarden.com/netwarden-latest-amd64.deb      # Intel/AMD 64-bit
+curl -LO https://get.netwarden.com/netwarden-latest-arm64.deb      # ARM 64-bit
+curl -LO https://get.netwarden.com/netwarden-latest-armhf.deb      # ARM 32-bit
 
 # Install
-sudo dpkg -i nodewarden-latest-amd64.deb
+sudo dpkg -i netwarden-latest-amd64.deb
 
 # Fix any dependency issues
 sudo apt-get install -f
 
 # Quick configuration one-liner (replace with your actual values)
-TENANT_ID="your-tenant-id" API_KEY="your-api-key" && sudo sed -i "s/^tenant_id:.*/tenant_id: $TENANT_ID/; s/^api_key:.*/api_key: $API_KEY/" /etc/nodewarden/nodewarden.conf && sudo systemctl start nodewarden
+TENANT_ID="your-tenant-id" API_KEY="your-api-key" && sudo sed -i "s/^tenant_id:.*/tenant_id: $TENANT_ID/; s/^api_key:.*/api_key: $API_KEY/" /etc/netwarden/netwarden.conf && sudo systemctl start netwarden
 ```
 
 ### Method 3: macOS Installation
@@ -158,21 +158,21 @@ For macOS systems, download and install using our packaged tarballs:
 ```bash
 # Download latest package for your macOS architecture
 # macOS Apple Silicon (M1/M2/M3)
-curl -LO https://get.nodewarden.com/nodewarden-latest-darwin-arm64.tar.gz
+curl -LO https://get.netwarden.com/netwarden-latest-darwin-arm64.tar.gz
 
 # macOS Intel
-curl -LO https://get.nodewarden.com/nodewarden-latest-darwin-amd64.tar.gz
+curl -LO https://get.netwarden.com/netwarden-latest-darwin-amd64.tar.gz
 
 # Extract the package
-tar -xzf nodewarden-latest-darwin-*.tar.gz
-cd nodewarden-*-darwin-*
+tar -xzf netwarden-latest-darwin-*.tar.gz
+cd netwarden-*-darwin-*
 
 # Run the installation script
 sudo ./scripts/install.sh
 
 # The installer will:
-# 1. Copy the binary to /usr/local/bin/nodewarden
-# 2. Create config directory at /usr/local/etc/nodewarden
+# 1. Copy the binary to /usr/local/bin/netwarden
+# 2. Create config directory at /usr/local/etc/netwarden
 # 3. Install the configuration template
 # 4. Show next steps for configuration
 ```
@@ -186,14 +186,14 @@ For Windows systems, download and install using the Windows installer or standal
 ```powershell
 # Download installer for your architecture
 # Intel/AMD 64-bit (most common)
-https://get.nodewarden.com/nodewarden-latest-windows-amd64-installer.exe
+https://get.netwarden.com/netwarden-latest-windows-amd64-installer.exe
 
 # ARM64 (Surface Pro X, etc.)
-https://get.nodewarden.com/nodewarden-latest-windows-arm64-installer.exe
+https://get.netwarden.com/netwarden-latest-windows-arm64-installer.exe
 
 # Run the installer - it will:
-# 1. Install the binary to C:\Program Files\Nodewarden\
-# 2. Create config directory at C:\ProgramData\Nodewarden\
+# 1. Install the binary to C:\Program Files\Netwarden\
+# 2. Create config directory at C:\ProgramData\Netwarden\
 # 3. Install as Windows Service
 # 4. Prompt for API credentials
 ```
@@ -203,10 +203,10 @@ https://get.nodewarden.com/nodewarden-latest-windows-arm64-installer.exe
 ```powershell
 # Download ZIP for your architecture
 # Intel/AMD 64-bit
-https://get.nodewarden.com/nodewarden-latest-windows-amd64.zip
+https://get.netwarden.com/netwarden-latest-windows-amd64.zip
 
 # ARM64
-https://get.nodewarden.com/nodewarden-latest-windows-arm64.zip
+https://get.netwarden.com/netwarden-latest-windows-arm64.zip
 
 # Extract and configure manually
 # See Windows Configuration section below
@@ -216,25 +216,25 @@ https://get.nodewarden.com/nodewarden-latest-windows-arm64.zip
 
 ```bash
 # Extract and manually install
-tar -xzf nodewarden-latest-darwin-*.tar.gz
-cd nodewarden-*-darwin-*
+tar -xzf netwarden-latest-darwin-*.tar.gz
+cd netwarden-*-darwin-*
 
 # Copy binary
-sudo cp bin/nodewarden /usr/local/bin/
-sudo chmod 755 /usr/local/bin/nodewarden
+sudo cp bin/netwarden /usr/local/bin/
+sudo chmod 755 /usr/local/bin/netwarden
 
 # Create config directory and copy config
-sudo mkdir -p /usr/local/etc/nodewarden
-sudo cp config/nodewarden.conf /usr/local/etc/nodewarden/
+sudo mkdir -p /usr/local/etc/netwarden
+sudo cp config/netwarden.conf /usr/local/etc/netwarden/
 
 # Edit configuration with your API credentials
-sudo vim /usr/local/etc/nodewarden/nodewarden.conf
+sudo vim /usr/local/etc/netwarden/netwarden.conf
 
 # Test the configuration
-nodewarden --config /usr/local/etc/nodewarden/nodewarden.conf --validate-config
+netwarden --config /usr/local/etc/netwarden/netwarden.conf --validate-config
 
 # Run the agent
-nodewarden --config /usr/local/etc/nodewarden/nodewarden.conf
+netwarden --config /usr/local/etc/netwarden/netwarden.conf
 ```
 
 ## ⚙️ Configuration
@@ -244,18 +244,18 @@ nodewarden --config /usr/local/etc/nodewarden/nodewarden.conf
 After installing the package, configure and start the agent with this one command:
 
 ```bash
-# Replace with your actual values from the Nodewarden dashboard
+# Replace with your actual values from the Netwarden dashboard
 TENANT_ID="abc1234567" API_KEY="nw_sk_..." && \
-  sudo sed -i "s/^tenant_id:.*/tenant_id: $TENANT_ID/; s/^api_key:.*/api_key: $API_KEY/" /etc/nodewarden/nodewarden.conf && \
-  sudo systemctl start nodewarden
+  sudo sed -i "s/^tenant_id:.*/tenant_id: $TENANT_ID/; s/^api_key:.*/api_key: $API_KEY/" /etc/netwarden/netwarden.conf && \
+  sudo systemctl start netwarden
 ```
 
 ### Manual Configuration
 
-The agent configuration file is located at `/etc/nodewarden/nodewarden.conf`:
+The agent configuration file is located at `/etc/netwarden/netwarden.conf`:
 
 ```yaml
-# REQUIRED: Get these from your Nodewarden dashboard
+# REQUIRED: Get these from your Netwarden dashboard
 tenant_id: abc1234567     # Your 10-character tenant ID
 api_key: nw_sk_...        # Your API key
 
@@ -267,11 +267,11 @@ api_key: nw_sk_...        # Your API key
 
 ### Getting Your Credentials
 
-1. Log in to your [Nodewarden Dashboard](https://app.nodewarden.com)
+1. Log in to your [Netwarden Dashboard](https://app.netwarden.com)
 2. Navigate to **Settings** → **Agent Tokens**
 3. Click **Generate New Token**
 4. Copy the `tenant_id` and `api_key`
-5. Add them to `/etc/nodewarden/nodewarden.conf`
+5. Add them to `/etc/netwarden/netwarden.conf`
 
 ### Advanced Configuration
 
@@ -315,7 +315,7 @@ max_tracked_processes: 100      # Limit tracked processes
 
 # ==================== LOGGING ====================
 log_level: info                          # debug, info, warn, error
-# log_file: /var/log/nodewarden.log       # Custom log location (optional, defaults to /var/log/nodewarden.log)
+# log_file: /var/log/netwarden.log       # Custom log location (optional, defaults to /var/log/netwarden.log)
 ```
 
 ## 🗄️ Database Monitoring Setup
@@ -328,23 +328,23 @@ Create a dedicated monitoring user with minimal privileges:
 
 ```sql
 -- Connect as superuser (postgres)
-CREATE USER nodewarden_monitor WITH PASSWORD 'secure_password';
+CREATE USER netwarden_monitor WITH PASSWORD 'secure_password';
 
 -- Grant minimal required permissions
-GRANT CONNECT ON DATABASE postgres TO nodewarden_monitor;
-GRANT pg_monitor TO nodewarden_monitor;  -- PostgreSQL 10+
+GRANT CONNECT ON DATABASE postgres TO netwarden_monitor;
+GRANT pg_monitor TO netwarden_monitor;  -- PostgreSQL 10+
 
 -- For older PostgreSQL versions (9.6 and below)
-GRANT SELECT ON pg_stat_database TO nodewarden_monitor;
-GRANT SELECT ON pg_stat_bgwriter TO nodewarden_monitor;
-GRANT SELECT ON pg_stat_replication TO nodewarden_monitor;
+GRANT SELECT ON pg_stat_database TO netwarden_monitor;
+GRANT SELECT ON pg_stat_bgwriter TO netwarden_monitor;
+GRANT SELECT ON pg_stat_replication TO netwarden_monitor;
 ```
 
-Add to `/etc/nodewarden/nodewarden.conf`:
+Add to `/etc/netwarden/netwarden.conf`:
 ```ini
 enable_postgresql = true
 postgresql_host = "localhost:5432"
-postgresql_user = "nodewarden_monitor"
+postgresql_user = "netwarden_monitor"
 postgresql_password = "secure_password"
 postgresql_database = "postgres"
 ```
@@ -352,7 +352,7 @@ postgresql_database = "postgres"
 Test the connection:
 ```bash
 # Using psql
-psql -h localhost -U nodewarden_monitor -d postgres -c "SELECT version();"
+psql -h localhost -U netwarden_monitor -d postgres -c "SELECT version();"
 ```
 
 ### MySQL/MariaDB Monitoring
@@ -361,28 +361,28 @@ Create a dedicated monitoring user with minimal privileges:
 
 ```sql
 -- Connect as root
-CREATE USER 'nodewarden_monitor'@'localhost' IDENTIFIED BY 'secure_password';
+CREATE USER 'netwarden_monitor'@'localhost' IDENTIFIED BY 'secure_password';
 
 -- Grant minimal required permissions
-GRANT PROCESS, REPLICATION CLIENT ON *.* TO 'nodewarden_monitor'@'localhost';
-GRANT SELECT ON performance_schema.* TO 'nodewarden_monitor'@'localhost';
+GRANT PROCESS, REPLICATION CLIENT ON *.* TO 'netwarden_monitor'@'localhost';
+GRANT SELECT ON performance_schema.* TO 'netwarden_monitor'@'localhost';
 
 -- Apply privileges
 FLUSH PRIVILEGES;
 ```
 
-Add to `/etc/nodewarden/nodewarden.conf`:
+Add to `/etc/netwarden/netwarden.conf`:
 ```ini
 enable_mysql = true
 mysql_host = "localhost:3306"
-mysql_user = "nodewarden_monitor"
+mysql_user = "netwarden_monitor"
 mysql_password = "secure_password"
 ```
 
 Test the connection:
 ```bash
 # Using mysql client
-mysql -h localhost -u nodewarden_monitor -p -e "SELECT VERSION();"
+mysql -h localhost -u netwarden_monitor -p -e "SELECT VERSION();"
 ```
 
 ## 🐳 Container Monitoring Setup
@@ -398,7 +398,7 @@ For Docker containers, the agent needs access to the Docker socket:
 # /var/run/docker.sock
 
 # If running agent in a container, mount the Docker socket:
-docker run -v /var/run/docker.sock:/var/run/docker.sock nodewarden-agent
+docker run -v /var/run/docker.sock:/var/run/docker.sock netwarden-agent
 
 # For rootless Docker, specify the socket path in config:
 # docker_socket = "/run/user/1000/docker.sock"
@@ -433,7 +433,7 @@ container_runtime = "podman"  # or "auto"
 For Kubernetes environments using containerd:
 
 ```ini
-# In nodewarden.conf:
+# In netwarden.conf:
 enable_containers = true
 container_runtime = "containerd"
 containerd_socket = "/run/containerd/containerd.sock"
@@ -454,12 +454,12 @@ docker ps
 ls -la /var/run/docker.sock
 
 # Test agent container detection
-sudo nodewarden --config /etc/nodewarden/nodewarden.conf
+sudo netwarden --config /etc/netwarden/netwarden.conf
 # Look for "Container collector initialized" in logs
 
 # For permission issues, add agent user to docker group:
-sudo usermod -aG docker nodewarden
-sudo systemctl restart nodewarden
+sudo usermod -aG docker netwarden
+sudo systemctl restart netwarden
 ```
 
 ## 🖥️ Virtual Machine Monitoring
@@ -473,14 +473,14 @@ To monitor Proxmox virtual machines:
 1. **Create a monitoring user in Proxmox:**
 ```bash
 # On Proxmox server, create read-only user
-pveum user add monitoring@pve --comment "Nodewarden Monitoring"
+pveum user add monitoring@pve --comment "Netwarden Monitoring"
 pveum passwd monitoring@pve  # Set password
 pveum aclmod / -user monitoring@pve -role PVEAuditor
 ```
 
 2. **Configure the agent:**
 ```ini
-# In nodewarden.conf:
+# In netwarden.conf:
 enable_vms = true
 vm_hypervisor = "proxmox"
 
@@ -499,10 +499,10 @@ proxmox_password = "your_password"
 3. **Using API tokens (recommended):**
 ```bash
 # Create API token in Proxmox
-pveum user token add monitoring@pve nodewarden-agent
+pveum user token add monitoring@pve netwarden-agent
 
 # Use token in config instead of password:
-# proxmox_token_id = "monitoring@pve!nodewarden-agent"
+# proxmox_token_id = "monitoring@pve!netwarden-agent"
 # proxmox_token_secret = "uuid-token-secret-here"
 ```
 
@@ -521,13 +521,13 @@ For KVM, QEMU, or Xen hypervisors using libvirt:
 1. **Grant libvirt access:**
 ```bash
 # Add agent user to libvirt group
-sudo usermod -aG libvirt nodewarden
-sudo systemctl restart nodewarden
+sudo usermod -aG libvirt netwarden
+sudo systemctl restart netwarden
 ```
 
 2. **Configure the agent:**
 ```ini
-# In nodewarden.conf:
+# In netwarden.conf:
 enable_vms = true
 vm_hypervisor = "libvirt"  # or "auto" for auto-detection
 
@@ -555,7 +555,7 @@ ls -la /var/run/libvirt/libvirt-sock
 For Windows Hyper-V hosts:
 
 ```ini
-# In nodewarden.conf:
+# In netwarden.conf:
 enable_vms = true
 vm_hypervisor = "auto"  # Auto-detects Hyper-V on Windows
 ```
@@ -584,7 +584,7 @@ vm_stats_interval = "60s"            # How often to collect VM stats
 
 ```bash
 # Check if VMs are detected
-grep -i "vm" /var/log/nodewarden/agent.log
+grep -i "vm" /var/log/netwarden/agent.log
 
 # Test hypervisor connection
 # For Proxmox:
@@ -614,45 +614,45 @@ virsh list --all
 
 ```bash
 # Start the agent
-sudo systemctl start nodewarden
+sudo systemctl start netwarden
 
 # Stop the agent
-sudo systemctl stop nodewarden
+sudo systemctl stop netwarden
 
 # Restart the agent
-sudo systemctl restart nodewarden
+sudo systemctl restart netwarden
 
 # Enable auto-start on boot
-sudo systemctl enable nodewarden
+sudo systemctl enable netwarden
 
 # Check service status
-sudo systemctl status nodewarden
+sudo systemctl status netwarden
 ```
 
 ### Viewing Logs
 
 ```bash
 # View recent logs
-sudo journalctl -u nodewarden -n 50
+sudo journalctl -u netwarden -n 50
 
 # Follow logs in real-time
-sudo journalctl -u nodewarden -f
+sudo journalctl -u netwarden -f
 
 # View log file directly
-sudo tail -f /var/log/nodewarden/agent.log
+sudo tail -f /var/log/netwarden/agent.log
 ```
 
 ### Troubleshooting
 
 ```bash
-# Check connectivity to Nodewarden API
-curl -H "Authorization: Bearer YOUR_API_KEY" https://api.nodewarden.com/agent/health
+# Check connectivity to Netwarden API
+curl -H "Authorization: Bearer YOUR_API_KEY" https://api.netwarden.com/agent/health
 
 # Verify agent is running
-ps aux | grep nodewarden
+ps aux | grep netwarden
 
 # Check agent version
-nodewarden --version
+netwarden --version
 ```
 
 ---
@@ -661,7 +661,7 @@ nodewarden --version
 
 ### Architecture Overview
 
-The Nodewarden Agent is designed with three core principles:
+The Netwarden Agent is designed with three core principles:
 
 1. **Performance First** - Minimal resource usage through efficient Go code, smart caching, and delta compression
 2. **Security by Default** - Runs as non-root, validates all inputs, uses secure communications
@@ -671,7 +671,7 @@ The Nodewarden Agent is designed with three core principles:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Nodewarden Agent                         │
+│                     Netwarden Agent                         │
 ├─────────────────────────────────────────────────────────────┤
 │                                                               │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
@@ -699,7 +699,7 @@ The Nodewarden Agent is designed with three core principles:
 └────────────────────────┼──────────────────────────────────────┘
                          │
                          ▼
-               Nodewarden Platform API
+               Netwarden Platform API
 ```
 
 ### Project Structure
@@ -707,7 +707,7 @@ The Nodewarden Agent is designed with three core principles:
 ```
 agent/
 ├── cmd/
-│   └── nodewarden-agent/
+│   └── netwarden-agent/
 │       └── main.go              # Entry point, CLI flags, daemon mode
 │
 ├── internal/
@@ -778,8 +778,8 @@ agent/
 │
 ├── build/                       # Build and packaging
 │   ├── Dockerfile.multi-arch-builder # Multi-arch Docker builds
-│   ├── nodewarden-x86_64.spec  # RPM spec file (x86_64)
-│   ├── nodewarden-armv7hl.spec # RPM spec file (ARM)
+│   ├── netwarden-x86_64.spec  # RPM spec file (x86_64)
+│   ├── netwarden-armv7hl.spec # RPM spec file (ARM)
 │   ├── deb-amd64/              # Debian package structure
 │   ├── rpm-x86_64/             # RPM package structure
 │   └── rpm-armv7hl/            # ARM RPM structure
@@ -848,20 +848,20 @@ Dynamically adjusts batch size based on:
 
 ```bash
 # Clone repository
-git clone https://github.com/nodewarden/nodewarden-agent
-cd nodewarden-agent
+git clone https://github.com/netwarden/netwarden-agent
+cd netwarden-agent
 
 # Build for current platform
-go build -o nodewarden-agent cmd/nodewarden-agent/main.go
+go build -o netwarden-agent cmd/netwarden-agent/main.go
 
 # Build with version information
-go build -ldflags "-X main.version=1.0.0 -X main.buildTime=$(date -u '+%Y-%m-%d_%H:%M:%S') -X main.gitCommit=$(git rev-parse HEAD)" -o nodewarden-agent cmd/nodewarden-agent/main.go
+go build -ldflags "-X main.version=1.0.0 -X main.buildTime=$(date -u '+%Y-%m-%d_%H:%M:%S') -X main.gitCommit=$(git rev-parse HEAD)" -o netwarden-agent cmd/netwarden-agent/main.go
 
 # Cross-compile for different platforms
-GOOS=linux GOARCH=amd64 go build -o nodewarden-linux-amd64 cmd/nodewarden-agent/main.go
-GOOS=linux GOARCH=arm64 go build -o nodewarden-linux-arm64 cmd/nodewarden-agent/main.go
-GOOS=darwin GOARCH=amd64 go build -o nodewarden-darwin-amd64 cmd/nodewarden-agent/main.go
-GOOS=windows GOARCH=amd64 go build -o nodewarden-windows-amd64.exe cmd/nodewarden-agent/main.go
+GOOS=linux GOARCH=amd64 go build -o netwarden-linux-amd64 cmd/netwarden-agent/main.go
+GOOS=linux GOARCH=arm64 go build -o netwarden-linux-arm64 cmd/netwarden-agent/main.go
+GOOS=darwin GOARCH=amd64 go build -o netwarden-darwin-amd64 cmd/netwarden-agent/main.go
+GOOS=windows GOARCH=amd64 go build -o netwarden-windows-amd64.exe cmd/netwarden-agent/main.go
 
 # Build all platforms with Make
 make all
@@ -880,7 +880,7 @@ make docker # Build Docker image
 sudo yum install -y rpm-build
 
 # Build RPM
-rpmbuild -bb build/nodewarden-x86_64.spec
+rpmbuild -bb build/netwarden-x86_64.spec
 
 # Package will be in ~/rpmbuild/RPMS/x86_64/
 ```
@@ -891,7 +891,7 @@ rpmbuild -bb build/nodewarden-x86_64.spec
 sudo apt-get install -y dpkg-dev
 
 # Build DEB
-dpkg-deb --build build/deb-amd64/nodewarden-agent_VERSION_amd64
+dpkg-deb --build build/deb-amd64/netwarden-agent_VERSION_amd64
 
 # Package will be in current directory
 ```
@@ -932,7 +932,7 @@ go tool pprof mem.prof
 
 ### Agent Security
 
-- **Non-root Execution**: Agent runs as dedicated `nodewarden` user
+- **Non-root Execution**: Agent runs as dedicated `netwarden` user
 - **Minimal Privileges**: Only requires read access to system metrics
 - **No Network Listening**: Agent only makes outbound HTTPS connections
 - **Secure Storage**: API keys stored with 600 permissions
@@ -950,7 +950,7 @@ go tool pprof mem.prof
 ### Best Practices
 
 1. **Rotate API Keys**: Regularly rotate API keys (every 90 days)
-2. **Restrict Config Access**: Ensure `/etc/nodewarden/nodewarden.conf` is readable only by root/nodewarden
+2. **Restrict Config Access**: Ensure `/etc/netwarden/netwarden.conf` is readable only by root/netwarden
 3. **Use Monitoring User**: For databases, always use dedicated monitoring users with minimal privileges
 4. **Review Logs**: Regularly review agent logs for anomalies
 5. **Update Regularly**: Keep agent updated for security patches
@@ -973,23 +973,23 @@ go tool pprof mem.prof
 
 ```bash
 # Check connectivity
-curl -I https://api.nodewarden.com
+curl -I https://api.netwarden.com
 
 # Verify API key
-curl -H "Authorization: Bearer YOUR_API_KEY" https://api.nodewarden.com/agent/health
+curl -H "Authorization: Bearer YOUR_API_KEY" https://api.netwarden.com/agent/health
 
 # Check agent logs
-journalctl -u nodewarden -n 100 | grep ERROR
+journalctl -u netwarden -n 100 | grep ERROR
 ```
 
 #### High CPU Usage
 
 ```bash
 # Check collection interval (minimum 10 seconds)
-grep collection_interval /etc/nodewarden/nodewarden.conf
+grep collection_interval /etc/netwarden/netwarden.conf
 
 # Disable expensive collectors
-# In nodewarden.conf:
+# In netwarden.conf:
 collect_container_metrics = false
 collect_process_metrics = false
 ```
@@ -1014,13 +1014,13 @@ Run agent in foreground with debug logging:
 
 ```bash
 # Stop service
-sudo systemctl stop nodewarden
+sudo systemctl stop netwarden
 
 # Set debug in config file:
 # log_level = "debug"
 
 # Run in foreground
-sudo nodewarden --config /etc/nodewarden/nodewarden.conf
+sudo netwarden --config /etc/netwarden/netwarden.conf
 ```
 
 ### Performance Tuning
@@ -1051,8 +1051,8 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ```bash
 # Fork and clone
-git clone https://github.com/YOUR_USERNAME/nodewarden-agent
-cd nodewarden-agent
+git clone https://github.com/YOUR_USERNAME/netwarden-agent
+cd netwarden-agent
 
 # Install dependencies
 go mod download
@@ -1080,15 +1080,15 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ### Community Support
 
-- 📧 Email: support@nodewarden.com
-- 💬 Discord: [discord.gg/nodewarden](https://discord.gg/nodewarden)
-- 🐛 Issues: [GitHub Issues](https://github.com/nodewarden/nodewarden-agent/issues)
-- 📖 Docs: [docs.nodewarden.com](https://docs.nodewarden.com)
+- 📧 Email: support@netwarden.com
+- 💬 Discord: [discord.gg/netwarden](https://discord.gg/netwarden)
+- 🐛 Issues: [GitHub Issues](https://github.com/netwarden/netwarden-agent/issues)
+- 📖 Docs: [docs.netwarden.com](https://docs.netwarden.com)
 
 ### Commercial Support
 
-Enterprise support plans available at [nodewarden.com/enterprise](https://nodewarden.com/enterprise)
+Enterprise support plans available at [netwarden.com/enterprise](https://netwarden.com/enterprise)
 
 ---
 
-Built with ❤️ by the Nodewarden team | [nodewarden.com](https://nodewarden.com)
+Built with ❤️ by the Netwarden team | [netwarden.com](https://netwarden.com)

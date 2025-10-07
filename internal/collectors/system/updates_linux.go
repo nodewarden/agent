@@ -104,7 +104,7 @@ func getYumDnfUpdates() (int, error) {
 
 	cmd := exec.CommandContext(ctx, "/usr/bin/yum", "check-update", "--quiet", "--assumeyes")
 	// Set XDG_STATE_HOME to redirect dnf5 logs to a writable directory
-	cmd.Env = append(os.Environ(), "XDG_STATE_HOME=/var/log/nodewarden/.dnf-state")
+	cmd.Env = append(os.Environ(), "XDG_STATE_HOME=/var/log/netwarden/.dnf-state")
 	output, err := cmd.CombinedOutput()
 	// check-update returns exit code 100 if updates are available
 	// This is expected behavior, not an error
@@ -276,7 +276,7 @@ func getYumDnfSecurityUpdates() (int, error) {
 
 	cmd := exec.CommandContext(ctx, "/usr/bin/yum", "updateinfo", "list", "security", "--quiet", "--assumeyes")
 	// Set XDG_STATE_HOME to redirect dnf5 logs to a writable directory
-	cmd.Env = append(os.Environ(), "XDG_STATE_HOME=/var/log/nodewarden/.dnf-state")
+	cmd.Env = append(os.Environ(), "XDG_STATE_HOME=/var/log/netwarden/.dnf-state")
 	output, err := cmd.Output()
 	if err != nil {
 		// If command fails, return 0 (no security updates)

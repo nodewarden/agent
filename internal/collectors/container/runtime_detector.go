@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 	
-	"nodewarden/internal/config"
+	"netwarden/internal/config"
 )
 
 // RuntimeDetector handles automatic detection of available container runtimes.

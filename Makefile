@@ -1,5 +1,5 @@
-# Nodewarden Agent Build Configuration
-BINARY_NAME=nodewarden
+# Netwarden Agent Build Configuration
+BINARY_NAME=netwarden
 VERSION=$(shell cat VERSION 2>/dev/null || echo "1.0.0")
 BUILD_DATE=$(shell date "+%Y-%m-%d %H:%M:%S")
 GIT_COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
@@ -14,7 +14,7 @@ all: clean build
 # Build for current platform
 .PHONY: build
 build:
-	CGO_ENABLED=0 go build $(LDFLAGS) -o bin/$(BINARY_NAME) ./cmd/nodewarden
+	CGO_ENABLED=0 go build $(LDFLAGS) -o bin/$(BINARY_NAME) ./cmd/netwarden
 
 # Cross-compile for all platforms
 .PHONY: build-all
@@ -22,47 +22,47 @@ build-all: clean
 	@echo "Building for all platforms..."
 	
 	# Linux AMD64
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-amd64 ./cmd/nodewarden
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-amd64 ./cmd/netwarden
 	
 	# Linux ARM64
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-arm64 ./cmd/nodewarden
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-arm64 ./cmd/netwarden
 	
 	# Linux ARM (32-bit)
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm go build $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-arm ./cmd/nodewarden
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm go build $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-arm ./cmd/netwarden
 	
 	# Windows AMD64
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-windows-amd64.exe ./cmd/nodewarden
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-windows-amd64.exe ./cmd/netwarden
 	
 	# Windows ARM64
-	CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-windows-arm64.exe ./cmd/nodewarden
+	CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-windows-arm64.exe ./cmd/netwarden
 	
 	# macOS AMD64
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-amd64 ./cmd/nodewarden
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-amd64 ./cmd/netwarden
 	
 	# macOS ARM64 (Apple Silicon)
-	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-arm64 ./cmd/nodewarden
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-arm64 ./cmd/netwarden
 
 # Individual platform builds
 .PHONY: linux
 linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-amd64 ./cmd/nodewarden
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-arm64 ./cmd/nodewarden
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm go build $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-arm ./cmd/nodewarden
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-amd64 ./cmd/netwarden
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-arm64 ./cmd/netwarden
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm go build $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-arm ./cmd/netwarden
 
 .PHONY: windows
 windows:
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-windows-amd64.exe ./cmd/nodewarden
-	CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-windows-arm64.exe ./cmd/nodewarden
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-windows-amd64.exe ./cmd/netwarden
+	CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-windows-arm64.exe ./cmd/netwarden
 
 .PHONY: macos
 macos:
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-amd64 ./cmd/nodewarden
-	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-arm64 ./cmd/nodewarden
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-amd64 ./cmd/netwarden
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-arm64 ./cmd/netwarden
 
 # Development build (with debug info)
 .PHONY: dev
 dev:
-	CGO_ENABLED=0 go build -race -o bin/$(BINARY_NAME)-dev ./cmd/nodewarden
+	CGO_ENABLED=0 go build -race -o bin/$(BINARY_NAME)-dev ./cmd/netwarden
 
 # Test the agent
 .PHONY: test
@@ -72,7 +72,7 @@ test:
 # Run the agent (development)
 .PHONY: run
 run: build
-	./bin/$(BINARY_NAME) -config nodewarden.conf
+	./bin/$(BINARY_NAME) -config netwarden.conf
 
 # Clean build artifacts
 .PHONY: clean
@@ -87,7 +87,7 @@ deps:
 	go mod tidy
 
 # Use existing full configuration template
-# The full config is available at build/nodewarden.conf.example (147 lines)
+# The full config is available at build/netwarden.conf.example (147 lines)
 
 # Package releases
 .PHONY: package
@@ -129,7 +129,7 @@ help:
 	@echo "  run        - Build and run agent"
 	@echo "  clean      - Clean build artifacts"
 	@echo "  deps       - Install/update dependencies"
-	@echo "  config     - Full config available at build/nodewarden.conf.example"
+	@echo "  config     - Full config available at build/netwarden.conf.example"
 	@echo "  package    - Create release packages"
 	@echo "  size       - Show binary sizes"
 	@echo "  info       - Show build information"
