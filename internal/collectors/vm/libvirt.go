@@ -8,11 +8,12 @@ import (
 	"encoding/xml"
 	"fmt"
 	"log/slog"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
-	
+
 	"netwarden/internal/config"
 )
 
@@ -71,21 +72,34 @@ func (l *LibvirtClient) Name() string {
 // IsAvailable checks if virsh command is available and can connect.
 func (l *LibvirtClient) IsAvailable() bool {
 	// Check if virsh is available
-	if _, err := exec.LookPath("virsh"); err != nil {
-		l.logger.Debug("virsh command not found")
+	virshPath, err := exec.LookPath("virsh")
+	if err != nil {
+		l.logger.Debug("virsh command not found in PATH",
+			"error", err.Error(),
+			"path_env", os.Getenv("PATH"))
 		return false
 	}
-	
+	l.logger.Debug("virsh command found", "path", virshPath)
+
 	// Test connection with a quick command
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
+	l.logger.Debug("testing libvirt connection", "uri", l.uri)
 	cmd := exec.CommandContext(ctx, "virsh", "-c", l.uri, "version")
-	if err := cmd.Run(); err != nil {
-		l.logger.Debug("virsh connection test failed", "uri", l.uri, "error", err)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		l.logger.Warn("virsh connection test failed",
+			"uri", l.uri,
+			"error", err.Error(),
+			"output", string(output))
 		return false
 	}
-	
+
+	l.logger.Info("libvirt connection successful",
+		"uri", l.uri,
+		"hypervisor", l.Name(),
+		"version_output", string(output))
 	return true
 }
 

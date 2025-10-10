@@ -3,11 +3,10 @@ package container
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"sync"
 	"time"
-	
+
 	"netwarden/internal/config"
 	"netwarden/internal/metrics"
 )
@@ -170,10 +169,9 @@ func (c *Collector) Collect(ctx context.Context) ([]metrics.Metric, error) {
 			statusValue = 1.0
 			runningContainers = append(runningContainers, container)
 		}
-		
-		// Create unique metric name to avoid database constraint conflicts
-		statusMetricName := fmt.Sprintf("container_status_%s", container.ID[:12])
-		if metric, err := c.builder.GaugeWithLabels(statusMetricName, statusValue, labels); err == nil {
+
+		// Status metric (1 = running, 0 = stopped) - matches vm_status pattern
+		if metric, err := c.builder.GaugeWithLabels("container_status", statusValue, labels); err == nil {
 			collectedMetrics = append(collectedMetrics, metric)
 		} else {
 			c.logger.Error("failed to create container_status metric", "container", container.Name, "error", err)

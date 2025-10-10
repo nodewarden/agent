@@ -267,11 +267,14 @@ func LoadConfig(filename string) (*Config, error) {
 	// Create config with basic structure
 	config := &Config{}
 
+	// Track which collectors were explicitly configured
+	explicitCollectors := make(map[string]bool)
+
 	// Parse key-value pairs
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Skip comments and empty lines
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
@@ -299,15 +302,20 @@ func LoadConfig(filename string) (*Config, error) {
 			config.LogFile = value
 		case "enable_cpu":
 			config.Collectors.CPU = value == "true" || value == "yes" || value == "1"
+			explicitCollectors["cpu"] = true
 		case "enable_memory":
 			config.Collectors.Memory = value == "true" || value == "yes" || value == "1"
+			explicitCollectors["memory"] = true
 		case "enable_system":
 			config.Collectors.System = value == "true" || value == "yes" || value == "1"
+			explicitCollectors["system"] = true
 		case "enable_disk":
 			config.Collectors.Disk = value == "true" || value == "yes" || value == "1"
+			explicitCollectors["disk"] = true
 		case "enable_network":
 			config.Collectors.Network = value == "true" || value == "yes" || value == "1"
 			config.Network.EnableNetwork = config.Collectors.Network
+			explicitCollectors["network"] = true
 		case "network_interfaces":
 			// Parse comma-separated interface names
 			if value != "" {
@@ -327,6 +335,7 @@ func LoadConfig(filename string) (*Config, error) {
 		case "enable_containers", "enable_container", "enable_docker":
 			config.Collectors.Container = value == "true" || value == "yes" || value == "1"
 			config.Container.EnableContainers = config.Collectors.Container
+			explicitCollectors["container"] = true
 		case "container_runtime":
 			config.Container.ContainerRuntime = value
 		case "container_socket":
@@ -339,6 +348,7 @@ func LoadConfig(filename string) (*Config, error) {
 		case "enable_vms", "enable_vm":
 			config.Collectors.VM = value == "true" || value == "yes" || value == "1"
 			config.VM.EnableVMs = config.Collectors.VM
+			explicitCollectors["vm"] = true
 		case "vm_hypervisor":
 			config.VM.VMHypervisor = value
 		case "vm_stats_interval":
@@ -413,19 +423,36 @@ func LoadConfig(filename string) (*Config, error) {
 
 	// Enable collectors by default (except MySQL and PostgreSQL which require explicit opt-in)
 	// These defaults only apply if no explicit configuration was provided
-	config.Collectors.CPU = true
-	config.Collectors.Memory = true
-	config.Collectors.System = true
-	config.Collectors.Disk = true
-	config.Collectors.Network = true
-	config.Collectors.Container = true
-	config.Collectors.VM = true
-
-	// Network configuration defaults
-	config.Network.EnableNetwork = config.Collectors.Network
-
-	// Container configuration defaults
-	config.Container.EnableContainers = config.Collectors.Container
+	if !explicitCollectors["cpu"] {
+		config.Collectors.CPU = true
+	}
+	if !explicitCollectors["memory"] {
+		config.Collectors.Memory = true
+	}
+	if !explicitCollectors["system"] {
+		config.Collectors.System = true
+	}
+	if !explicitCollectors["disk"] {
+		config.Collectors.Disk = true
+	}
+	if !explicitCollectors["network"] {
+		config.Collectors.Network = true
+		config.Network.EnableNetwork = true
+	}
+	if !explicitCollectors["container"] {
+		config.Collectors.Container = true
+		config.Container.EnableContainers = true
+	} else {
+		// If explicitly configured, sync the Container config with Collectors
+		config.Container.EnableContainers = config.Collectors.Container
+	}
+	if !explicitCollectors["vm"] {
+		config.Collectors.VM = true
+		config.VM.EnableVMs = true
+	} else {
+		// If explicitly configured, sync the VM config with Collectors
+		config.VM.EnableVMs = config.Collectors.VM
+	}
 	if config.Container.ContainerRuntime == "" {
 		config.Container.ContainerRuntime = "auto"
 	}
@@ -434,7 +461,6 @@ func LoadConfig(filename string) (*Config, error) {
 	}
 
 	// VM configuration defaults
-	config.VM.EnableVMs = config.Collectors.VM
 	if config.VM.VMHypervisor == "" {
 		config.VM.VMHypervisor = "auto"
 	}

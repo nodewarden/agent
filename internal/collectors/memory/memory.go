@@ -86,7 +86,7 @@ func (c *Collector) collectMemoryStats(ctx context.Context, collectedMetrics *[]
 			metrics.QuickGauge(c.hostname, "memory_used_bytes", float64(vmStat.Used)),
 			metrics.QuickGauge(c.hostname, "memory_free_bytes", float64(vmStat.Free)),
 			metrics.QuickGauge(c.hostname, "memory_available_bytes", float64(vmStat.Available)),
-			metrics.QuickGauge(c.hostname, "memory_usage_percent", vmStat.UsedPercent),
+			metrics.QuickGauge(c.hostname, "memory_usage", vmStat.UsedPercent),
 			metrics.QuickGauge(c.hostname, "memory_buffers_bytes", float64(vmStat.Buffers)),
 			metrics.QuickGauge(c.hostname, "memory_cached_bytes", float64(vmStat.Cached)),
 		)

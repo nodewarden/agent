@@ -23,12 +23,19 @@ func NewRuntimeDetector(logger *slog.Logger) *RuntimeDetector {
 
 // DetectRuntime finds and creates the best available container runtime client.
 func (r *RuntimeDetector) DetectRuntime(cfg config.ContainerConfig) RuntimeClient {
+	r.logger.Debug("detection config",
+		"runtime", cfg.ContainerRuntime,
+		"socket", cfg.ContainerSocket,
+		"enabled", cfg.EnableContainers)
+
 	if cfg.ContainerRuntime != "auto" {
-		return r.createSpecificRuntime(cfg.ContainerRuntime, cfg.ContainerSocket)
+		r.logger.Debug("using specific runtime (not auto)", "runtime", cfg.ContainerRuntime)
+		result := r.createSpecificRuntime(cfg.ContainerRuntime, cfg.ContainerSocket)
+		return result
 	}
-	
-	r.logger.Debug("auto-detecting container runtime")
-	
+
+	r.logger.Debug("auto-detecting container runtime (runtime=auto)")
+
 	// Try runtimes in order of preference: Docker → Podman
 	runtimes := []struct {
 		name   string
@@ -37,26 +44,35 @@ func (r *RuntimeDetector) DetectRuntime(cfg config.ContainerConfig) RuntimeClien
 		{
 			name: "docker/podman",
 			create: func() RuntimeClient {
+				r.logger.Debug("creating docker/podman client", "configured_socket", cfg.ContainerSocket)
 				// The unified client will auto-detect Docker vs Podman
 				return NewDockerCompatibleClient(cfg.ContainerSocket)
 			},
 		},
 		// Future: Add containerd when implemented
 	}
-	
-	for _, runtime := range runtimes {
-		r.logger.Debug("trying runtime", "runtime", runtime.name)
-		
+
+	for i, runtime := range runtimes {
+		r.logger.Debug("trying runtime", "index", i, "runtime", runtime.name)
+
+		r.logger.Debug("creating client for runtime", "runtime", runtime.name)
 		client := runtime.create()
-		if client.IsAvailable() {
-			r.logger.Info("detected container runtime", "runtime", client.Name())
+		r.logger.Debug("client created, checking availability", "runtime", runtime.name)
+
+		available := client.IsAvailable()
+		r.logger.Debug("availability check complete", "runtime", runtime.name, "available", available)
+
+		if available {
+			name := client.Name()
+			r.logger.Info("detected container runtime", "runtime", name)
 			return client
 		}
-		
+
+		r.logger.Debug("runtime not available, cleaning up", "runtime", runtime.name)
 		// Clean up failed client
 		client.Close()
 	}
-	
+
 	r.logger.Info("no container runtime detected")
 	return &NoOpClient{}
 }

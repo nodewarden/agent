@@ -176,7 +176,7 @@ func (c *Collector) Collect(ctx context.Context) ([]metrics.Metric, error) {
 
 		// Disk usage percentage
 		usagePercent := float64(usage.Used) / float64(usage.Total) * 100
-		if metric, err := c.builder.GaugeWithLabels("disk_usage_percent"+metricSuffix, usagePercent, labels); err == nil {
+		if metric, err := c.builder.GaugeWithLabels("disk_usage"+metricSuffix, usagePercent, labels); err == nil {
 			collectedMetrics = append(collectedMetrics, metric)
 		}
 

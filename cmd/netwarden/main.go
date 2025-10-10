@@ -128,6 +128,7 @@ func main() {
 
 	// Setup structured logging - always log to file since we're always a daemon
 	logger := setupLoggingWithFile(cfg.LogLevel, "json", cfg.LogFile)
+	slog.SetDefault(logger) // Set as default logger so slog.Default() and slog.Info() use it
 
 	// Log startup information
 	logger.Info("starting Netwarden agent",

@@ -62,9 +62,10 @@ func (s *netwardenService) Execute(args []string, r <-chan svc.ChangeRequest, ch
 
 	// Setup logging after config is loaded
 	logger := setupLoggingWithFile(cfg.LogLevel, "json", cfg.LogFile)
+	slog.SetDefault(logger) // Set as default logger so slog.Default() and slog.Info() use it
 	s.logger = logger
 
-	s.logger.Info("Netwarden Windows service starting",
+	s.logger.Info(fmt.Sprintf("Netwarden Agent version %s service starting", version),
 		"config_file", s.configFile,
 		"tenant_id", cfg.TenantID[:6]+"****", // Log partial tenant ID for debugging
 	)
@@ -92,11 +93,21 @@ func (s *netwardenService) Execute(args []string, r <-chan svc.ChangeRequest, ch
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 	s.stopChannel = make(chan struct{})
 
-	// Start the agent in a goroutine
+	// Start the agent in a goroutine with panic recovery
 	agentErrors := make(chan error, 1)
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				errMsg := fmt.Sprintf("CRITICAL PANIC in agent.Run: %v", r)
+				s.logger.Error(errMsg)
+				if elog != nil {
+					elog.Error(1, errMsg)
+				}
+				agentErrors <- fmt.Errorf("agent panicked: %v", r)
+			}
+			close(s.stopChannel)
+		}()
 		agentErrors <- s.agent.Run(s.ctx)
-		close(s.stopChannel)
 	}()
 
 	// Set service status to running
@@ -156,17 +167,21 @@ func (s *netwardenService) Execute(args []string, r <-chan svc.ChangeRequest, ch
 			}
 
 		case err := <-agentErrors:
-			// Agent stopped/failed
+			// Agent stopped/failed - this should NOT happen during normal operation
 			if err != nil {
-				s.logger.Error("agent failed", "error", err)
+				s.logger.Error("CRITICAL: Agent stopped unexpectedly with error",
+					"error", err,
+					"error_type", fmt.Sprintf("%T", err),
+				)
 				if elog != nil {
-					elog.Error(1, fmt.Sprintf("agent failed: %v", err))
+					elog.Error(1, fmt.Sprintf("CRITICAL: Agent stopped unexpectedly: %v", err))
 				}
+				// Return error code to trigger Windows service recovery
 				return true, 1
 			}
-			s.logger.Info("agent exited normally")
+			s.logger.Warn("Agent exited without error - unexpected during normal operation")
 			if elog != nil {
-				elog.Info(1, "Agent exited normally")
+				elog.Warning(1, "Agent exited normally but unexpectedly - service will stop")
 			}
 			return false, 0
 

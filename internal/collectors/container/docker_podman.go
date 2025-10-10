@@ -5,10 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
-	"os/user"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -21,6 +20,7 @@ type DockerCompatibleClient struct {
 	httpClient         *http.Client
 	runtimeType        string // "docker" or "podman"
 	runtimeName        string // detected runtime name
+	logger             *slog.Logger
 	// Availability caching to prevent repeated expensive checks
 	availabilityMutex  sync.RWMutex
 	cachedAvailability bool
@@ -35,21 +35,23 @@ func NewDockerClient(socketPath string) *DockerCompatibleClient {
 
 // NewDockerCompatibleClient creates a client that works with Docker or Podman.
 func NewDockerCompatibleClient(socketPath string) *DockerCompatibleClient {
+
 	var detectedPath string
 	var runtimeType string
-	
+
 	if socketPath != "" {
-		// Use explicitly provided socket path
 		detectedPath = socketPath
-		runtimeType = "unknown" // Will be detected on first use
+		runtimeType = "unknown"
 	} else {
-		// Try to detect available runtime
-		detectedPath, runtimeType = detectContainerRuntime()
+		detectedPath, runtimeType = detectContainerRuntimeSimple()
 	}
-	
-	return &DockerCompatibleClient{
+
+	logger := slog.Default().With("component", "collector", "type", "container")
+
+	client := &DockerCompatibleClient{
 		socketPath:  detectedPath,
 		runtimeType: runtimeType,
+		logger:      logger,
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 			Transport: &http.Transport{
@@ -57,6 +59,8 @@ func NewDockerCompatibleClient(socketPath string) *DockerCompatibleClient {
 			},
 		},
 	}
+
+	return client
 }
 
 // Name returns the detected runtime name.
@@ -70,32 +74,37 @@ func (d *DockerCompatibleClient) Name() string {
 // IsAvailable checks if the container runtime is available and responding.
 // Uses caching to prevent expensive repeated checks.
 func (d *DockerCompatibleClient) IsAvailable() bool {
+	if d == nil {
+		return false
+	}
+
+	// If no socket path, immediately return false
+	if d.socketPath == "" {
+		return false
+	}
+
 	// Check cache first (5-minute cache)
 	d.availabilityMutex.RLock()
-	if time.Now().Before(d.cacheExpiry) {
-		result := d.cachedAvailability
-		d.availabilityMutex.RUnlock()
-		return result
-	}
+	now := time.Now()
+	isCached := now.Before(d.cacheExpiry)
+	cachedResult := d.cachedAvailability
 	d.availabilityMutex.RUnlock()
+
+	if isCached {
+		return cachedResult
+	}
 
 	// Need to check availability
 	d.availabilityMutex.Lock()
 	defer d.availabilityMutex.Unlock()
 
-	// Double-check pattern - another goroutine might have updated the cache
-	if time.Now().Before(d.cacheExpiry) {
-		return d.cachedAvailability
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	// Use generic host name since both Docker and Podman APIs are compatible
 	req, _ := http.NewRequestWithContext(ctx, "GET", "http://runtime/version", nil)
+
 	resp, err := d.httpClient.Do(req)
 	if err != nil {
-		// Cache negative result for shorter time (1 minute)
 		d.cachedAvailability = false
 		d.cacheExpiry = time.Now().Add(1 * time.Minute)
 		return false
@@ -103,19 +112,30 @@ func (d *DockerCompatibleClient) IsAvailable() bool {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 200 {
+		d.logger.Debug("runtime returned 200 OK, runtime is available")
 		// Try to detect runtime type from version response if not already known
 		if d.runtimeType == "unknown" || d.runtimeName == "" {
+			d.logger.Debug("runtime type unknown, detecting from response")
 			d.detectRuntimeFromResponse(resp)
+			d.logger.Debug("runtime detection complete", "detected_type", d.runtimeType, "detected_name", d.runtimeName)
 		}
 		// Cache positive result for longer time (5 minutes)
 		d.cachedAvailability = true
 		d.cacheExpiry = time.Now().Add(5 * time.Minute)
+		d.logger.Debug("<<< IsAvailable() returning true (runtime available)", "cache_duration", "5m")
 		return true
 	}
+
+	// Non-200 status code indicates runtime issue
+	d.logger.Debug("runtime returned non-200 status",
+		"socket", d.socketPath,
+		"runtime", d.runtimeType,
+		"status_code", resp.StatusCode)
 
 	// Cache negative result for shorter time (1 minute)
 	d.cachedAvailability = false
 	d.cacheExpiry = time.Now().Add(1 * time.Minute)
+	d.logger.Debug("<<< IsAvailable() returning false (non-200 status)", "cache_duration", "1m")
 	return false
 }
 
@@ -143,9 +163,15 @@ func (d *DockerCompatibleClient) ListContainers(ctx context.Context) ([]Containe
 	
 	containers := make([]Container, len(apiContainers))
 	for i, ac := range apiContainers {
+		// Get container name, with defensive bounds check
+		name := ac.ID // Default to ID if Names is empty
+		if len(ac.Names) > 0 {
+			name = cleanContainerName(ac.Names[0])
+		}
+
 		containers[i] = Container{
 			ID:      ac.ID,
-			Name:    cleanContainerName(ac.Names[0]), // Remove leading /
+			Name:    name,
 			Image:   ac.Image,
 			Status:  ac.State,
 			Labels:  ac.Labels,
@@ -278,41 +304,53 @@ func convertAPIStats(containerID string, stats *statsFromAPI) *ContainerStats {
 	}
 }
 
-// detectContainerRuntime tries to find an available container runtime.
-// Returns the socket path and runtime type.
-func detectContainerRuntime() (string, string) {
-	// Try Windows Docker Desktop named pipe first
-	if runtime.GOOS == "windows" {
-		pipePath := `\\.\pipe\docker_engine`
-		if isNamedPipeAvailable(pipePath) {
-			return pipePath, "docker"
+// detectContainerRuntimeSimple is a simplified detection function with direct logging.
+func detectContainerRuntimeSimple() (string, string) {
+
+	// Try Docker
+	dockerPath := "/var/run/docker.sock"
+	slog.Info("checking Docker socket", "path", dockerPath)
+	if _, err := os.Stat(dockerPath); err == nil {
+		slog.Info("FOUND Docker socket", "path", dockerPath)
+		return dockerPath, "docker"
+	} else {
+		// Check if it's a permission error - this needs user attention
+		if os.IsPermission(err) {
+			slog.Warn("Docker socket found but permission denied (service runs as root)",
+				"path", dockerPath,
+				"error", err.Error(),
+				"fix", "Check socket permissions: sudo chmod 660 /var/run/docker.sock && sudo systemctl restart netwarden")
+		} else {
+			slog.Info("Docker socket NOT found", "path", dockerPath, "error", err.Error())
 		}
 	}
-	
-	// Try Docker first (Linux/macOS)
-	if _, err := os.Stat("/var/run/docker.sock"); err == nil {
-		return "/var/run/docker.sock", "docker"
+
+	// Try Podman system sockets
+	podmanPaths := []string{
+		"/var/run/podman/podman.sock",
+		"/run/podman/podman.sock",
 	}
-	
-	// Try Podman system socket
-	if _, err := os.Stat("/run/podman/podman.sock"); err == nil {
-		return "/run/podman/podman.sock", "podman"
-	}
-	
-	// Try Podman user socket
-	if currentUser, err := user.Current(); err == nil {
-		userSocket := fmt.Sprintf("/run/user/%s/podman/podman.sock", currentUser.Uid)
-		if _, err := os.Stat(userSocket); err == nil {
-			return userSocket, "podman"
+	for _, socketPath := range podmanPaths {
+		slog.Info("checking Podman socket", "path", socketPath)
+		if _, err := os.Stat(socketPath); err == nil {
+			slog.Info("FOUND Podman socket", "path", socketPath)
+			return socketPath, "podman"
+		} else {
+			// Check if it's a permission error - this needs user attention
+			if os.IsPermission(err) {
+				slog.Warn("Podman socket found but permission denied (service runs as root)",
+					"path", socketPath,
+					"error", err.Error(),
+					"fix", "Ensure podman.socket service is running: sudo systemctl enable --now podman.socket")
+			} else {
+				slog.Info("Podman socket NOT found", "path", socketPath, "error", err.Error())
+			}
 		}
 	}
-	
-	// Default based on platform
-	if runtime.GOOS == "windows" {
-		return `\\.\pipe\docker_engine`, "docker"
-	}
-	return "/var/run/docker.sock", "docker"
+
+	return "", "none"
 }
+
 
 // detectRuntimeFromResponse attempts to detect the runtime from version response.
 func (d *DockerCompatibleClient) detectRuntimeFromResponse(resp *http.Response) {
