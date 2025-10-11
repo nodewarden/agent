@@ -340,12 +340,12 @@ GRANT SELECT ON pg_stat_replication TO netwarden_monitor;
 ```
 
 Add to `/etc/netwarden/netwarden.conf`:
-```ini
-enable_postgresql = true
-postgresql_host = "localhost:5432"
-postgresql_user = "netwarden_monitor"
-postgresql_password = "secure_password"
-postgresql_database = "postgres"
+```yaml
+enable_postgresql: true
+postgresql_host: localhost:5432
+postgresql_user: netwarden_monitor
+postgresql_password: secure_password
+postgresql_database: postgres
 ```
 
 Test the connection:
@@ -371,11 +371,11 @@ FLUSH PRIVILEGES;
 ```
 
 Add to `/etc/netwarden/netwarden.conf`:
-```ini
-enable_mysql = true
-mysql_host = "localhost:3306"
-mysql_user = "netwarden_monitor"
-mysql_password = "secure_password"
+```yaml
+enable_mysql: true
+mysql_host: localhost:3306
+mysql_user: netwarden_monitor
+mysql_password: secure_password
 ```
 
 Test the connection:
@@ -400,7 +400,7 @@ For Docker containers, the agent needs access to the Docker socket:
 docker run -v /var/run/docker.sock:/var/run/docker.sock netwarden-agent
 
 # For rootless Docker, specify the socket path in config:
-# docker_socket = "/run/user/1000/docker.sock"
+# docker_socket: /run/user/1000/docker.sock
 ```
 
 **Collected Metrics:**
@@ -423,19 +423,19 @@ Podman is automatically detected and monitored:
 # Socket: /run/podman/podman.sock
 
 # Enable in config (auto-detected by default):
-enable_containers = true
-container_runtime = "podman"  # or "auto"
+enable_containers: true
+container_runtime: podman  # or auto
 ```
 
 ### Kubernetes/Containerd Monitoring
 
 For Kubernetes environments using containerd:
 
-```ini
+```yaml
 # In netwarden.conf:
-enable_containers = true
-container_runtime = "containerd"
-containerd_socket = "/run/containerd/containerd.sock"
+enable_containers: true
+container_runtime: containerd
+containerd_socket: /run/containerd/containerd.sock
 ```
 
 **Note:** The agent needs appropriate permissions to access the container runtime socket. Typically this means:
@@ -478,21 +478,21 @@ pveum aclmod / -user monitoring@pve -role PVEAuditor
 ```
 
 2. **Configure the agent:**
-```ini
+```yaml
 # In netwarden.conf:
-enable_vms = true
-vm_hypervisor = "proxmox"
+enable_vms: true
+vm_hypervisor: proxmox
 
 # Proxmox API settings
-proxmox_api = "https://proxmox.example.com:8006"
-proxmox_username = "monitoring@pve"
-proxmox_password = "your_password"
+proxmox_api: https://proxmox.example.com:8006
+proxmox_username: monitoring@pve
+proxmox_password: your_password
 
 # Optional: Monitor specific node only
-# proxmox_node = "node1"
+# proxmox_node: node1
 
 # For self-signed certificates:
-# proxmox_skip_tls_verify = true
+# proxmox_skip_tls_verify: true
 ```
 
 3. **Using API tokens (recommended):**
@@ -501,8 +501,8 @@ proxmox_password = "your_password"
 pveum user token add monitoring@pve netwarden-agent
 
 # Use token in config instead of password:
-# proxmox_token_id = "monitoring@pve!netwarden-agent"
-# proxmox_token_secret = "uuid-token-secret-here"
+# proxmox_token_id: monitoring@pve!netwarden-agent
+# proxmox_token_secret: uuid-token-secret-here
 ```
 
 **Collected Metrics:**
@@ -525,19 +525,19 @@ sudo systemctl restart netwarden
 ```
 
 2. **Configure the agent:**
-```ini
+```yaml
 # In netwarden.conf:
-enable_vms = true
-vm_hypervisor = "libvirt"  # or "auto" for auto-detection
+enable_vms: true
+vm_hypervisor: libvirt  # or auto for auto-detection
 
 # Libvirt connection (default: local system)
-libvirt_uri = "qemu:///system"
+libvirt_uri: qemu:///system
 
 # For remote libvirt host:
-# libvirt_uri = "qemu+ssh://user@host/system"
+# libvirt_uri: qemu+ssh://user@host/system
 
 # Custom socket path if needed:
-# libvirt_socket = "/var/run/libvirt/libvirt-sock"
+# libvirt_socket: /var/run/libvirt/libvirt-sock
 ```
 
 3. **Test libvirt connection:**
@@ -553,37 +553,37 @@ ls -la /var/run/libvirt/libvirt-sock
 
 For Windows Hyper-V hosts:
 
-```ini
+```yaml
 # In netwarden.conf:
-enable_vms = true
-vm_hypervisor = "auto"  # Auto-detects Hyper-V on Windows
+enable_vms: true
+vm_hypervisor: auto  # Auto-detects Hyper-V on Windows
 ```
 
 The agent automatically detects and monitors Hyper-V VMs when running on a Windows host with Hyper-V enabled.
 
 ### VM Monitoring Configuration Options
 
-```ini
+```yaml
 # ==================== VM MONITORING ====================
-enable_vms = true                    # Enable VM monitoring
-vm_hypervisor = "auto"               # auto, proxmox, libvirt, kvm, xen, qemu
-vm_stats_interval = "60s"            # How often to collect VM stats
+enable_vms: true                    # Enable VM monitoring
+vm_hypervisor: auto                 # auto, proxmox, libvirt, kvm, xen, qemu
+vm_stats_interval: 60s              # How often to collect VM stats
 
 # Include/exclude specific VMs (regex patterns)
-# vm_include = ["prod-*", "db-*"]   # Only monitor these VMs
-# vm_exclude = ["test-*", "dev-*"]  # Exclude these VMs
+# vm_include: ["prod-*", "db-*"]   # Only monitor these VMs
+# vm_exclude: ["test-*", "dev-*"]  # Exclude these VMs
 
 # Performance tuning
-# vm_timeout = "30s"                # Timeout for hypervisor operations
-# vm_cache_timeout = "300s"          # Cache VM list for 5 minutes
-# vm_parallel_stats = 10             # Query 10 VMs in parallel
+# vm_timeout: 30s                  # Timeout for hypervisor operations
+# vm_cache_timeout: 300s           # Cache VM list for 5 minutes
+# vm_parallel_stats: 10            # Query 10 VMs in parallel
 ```
 
 ### Troubleshooting VM Monitoring
 
 ```bash
 # Check if VMs are detected
-grep -i "vm" /var/log/netwarden/agent.log
+grep -i "vm" /var/log/netwarden.log
 
 # Test hypervisor connection
 # For Proxmox:
@@ -638,14 +638,14 @@ sudo journalctl -u netwarden -n 50
 sudo journalctl -u netwarden -f
 
 # View log file directly
-sudo tail -f /var/log/netwarden/agent.log
+sudo tail -f /var/log/netwarden.log
 ```
 
 ### Troubleshooting
 
 ```bash
 # Check connectivity to Netwarden API
-curl -H "Authorization: Bearer YOUR_API_KEY" https://api.netwarden.com/agent/health
+curl -I https://api.netwarden.com
 
 # Verify agent is running
 ps aux | grep netwarden
@@ -706,7 +706,7 @@ The Netwarden Agent is designed with three core principles:
 ```
 agent/
 ├── cmd/
-│   └── netwarden-agent/
+│   └── netwarden/
 │       └── main.go              # Entry point, CLI flags, daemon mode
 │
 ├── internal/
@@ -851,16 +851,16 @@ git clone https://github.com/netwarden/netwarden-agent
 cd netwarden-agent
 
 # Build for current platform
-go build -o netwarden-agent cmd/netwarden-agent/main.go
+go build -o netwarden-agent cmd/netwarden/main.go
 
 # Build with version information
-go build -ldflags "-X main.version=1.0.0 -X main.buildTime=$(date -u '+%Y-%m-%d_%H:%M:%S') -X main.gitCommit=$(git rev-parse HEAD)" -o netwarden-agent cmd/netwarden-agent/main.go
+go build -ldflags "-X main.version=1.0.0 -X main.buildTime=$(date -u '+%Y-%m-%d_%H:%M:%S') -X main.gitCommit=$(git rev-parse HEAD)" -o netwarden-agent cmd/netwarden/main.go
 
 # Cross-compile for different platforms
-GOOS=linux GOARCH=amd64 go build -o netwarden-linux-amd64 cmd/netwarden-agent/main.go
-GOOS=linux GOARCH=arm64 go build -o netwarden-linux-arm64 cmd/netwarden-agent/main.go
-GOOS=darwin GOARCH=amd64 go build -o netwarden-darwin-amd64 cmd/netwarden-agent/main.go
-GOOS=windows GOARCH=amd64 go build -o netwarden-windows-amd64.exe cmd/netwarden-agent/main.go
+GOOS=linux GOARCH=amd64 go build -o netwarden-linux-amd64 cmd/netwarden/main.go
+GOOS=linux GOARCH=arm64 go build -o netwarden-linux-arm64 cmd/netwarden/main.go
+GOOS=darwin GOARCH=amd64 go build -o netwarden-darwin-amd64 cmd/netwarden/main.go
+GOOS=windows GOARCH=amd64 go build -o netwarden-windows-amd64.exe cmd/netwarden/main.go
 
 # Build all platforms with Make
 make all
@@ -974,11 +974,11 @@ go tool pprof mem.prof
 # Check connectivity
 curl -I https://api.netwarden.com
 
-# Verify API key
-curl -H "Authorization: Bearer YOUR_API_KEY" https://api.netwarden.com/agent/health
-
-# Check agent logs
+# Check agent logs for errors
 journalctl -u netwarden -n 100 | grep ERROR
+
+# Verify configuration
+cat /etc/netwarden/netwarden.conf | grep -E '(tenant_id|api_key)'
 ```
 
 #### High CPU Usage
@@ -989,8 +989,8 @@ grep collection_interval /etc/netwarden/netwarden.conf
 
 # Disable expensive collectors
 # In netwarden.conf:
-collect_container_metrics = false
-collect_process_metrics = false
+collect_container_metrics: false
+collect_process_metrics: false
 ```
 
 #### Database Connection Failed
@@ -1016,7 +1016,7 @@ Run agent in foreground with debug logging:
 sudo systemctl stop netwarden
 
 # Set debug in config file:
-# log_level = "debug"
+# log_level: debug
 
 # Run in foreground
 sudo netwarden --config /etc/netwarden/netwarden.conf
@@ -1026,20 +1026,20 @@ sudo netwarden --config /etc/netwarden/netwarden.conf
 
 For high-load systems:
 
-```ini
+```yaml
 # Increase collection interval
-collection_interval = 120
+collection_interval: 120
 
 # Increase batch size
-batch_size = 500
+batch_size: 500
 
 # Limit process tracking
-max_tracked_processes = 50
-process_cpu_threshold = 5.0
-process_memory_threshold = 100
+max_tracked_processes: 50
+process_cpu_threshold: 5.0
+process_memory_threshold: 100
 
 # Disable non-critical collectors
-enable_vms = false
+enable_vms: false
 ```
 
 ## 📝 Contributing

@@ -150,6 +150,17 @@ func (c *Collector) Collect(ctx context.Context) ([]metrics.Metric, error) {
 				c.logger.Debug("skipping virtual filesystem", "device", partition.Device, "fstype", partition.Fstype)
 				continue
 			}
+
+			// Skip container overlay storage paths
+			// These are bind mounts or subdirectories that appear as regular filesystems (ext4, xfs)
+			// but are actually container runtime storage and pollute disk metrics
+			if isContainerOverlayPath(partition.Mountpoint) {
+				c.logger.Debug("skipping container overlay storage path",
+					"device", partition.Device,
+					"mountpoint", partition.Mountpoint,
+					"fstype", partition.Fstype)
+				continue
+			}
 		}
 
 		// Get usage stats for each partition
@@ -253,4 +264,59 @@ func (c *Collector) getPartitionsWithCache(ctx context.Context) ([]disk.Partitio
 // Close performs any necessary cleanup.
 func (c *Collector) Close() error {
 	return nil
+}
+
+// isContainerOverlayPath checks if a mountpoint is a container overlay storage path.
+// Container runtimes (Docker, Podman, containerd, LXD, etc.) use overlay filesystems
+// for layered container storage. These paths pollute disk metrics and should be filtered out.
+func isContainerOverlayPath(mountpoint string) bool {
+	// Container overlay storage paths to filter
+	containerPaths := []string{
+		// Docker overlay storage
+		"/var/lib/docker/overlay2/",
+		"/var/lib/docker/overlay/",
+		"/var/lib/docker/containers/",
+
+		// Podman/CRI-O overlay storage (rootful)
+		"/var/lib/containers/storage/overlay",
+		"/var/lib/containers/storage/vfs",
+
+		// containerd snapshotter storage
+		"/var/lib/containerd/io.containerd.snapshotter",
+
+		// LXD/LXC storage pools
+		"/var/lib/lxd/storage-pools/",
+		"/var/snap/lxd/common/lxd/storage-pools/",
+
+		// Kubernetes kubelet ephemeral storage
+		"/var/lib/kubelet/pods/",
+
+		// k3s/Rancher container storage
+		"/var/lib/rancher/k3s/agent/containerd/",
+		"/var/lib/rancher/rke2/agent/containerd/",
+
+		// Container runtime directories
+		"/run/containers/storage/",
+	}
+
+	// Check if mountpoint starts with any container path
+	for _, containerPath := range containerPaths {
+		if strings.HasPrefix(mountpoint, containerPath) {
+			return true
+		}
+	}
+
+	// Check for rootless container storage in user home directories
+	// Pattern: /home/<user>/.local/share/containers/storage/
+	if strings.Contains(mountpoint, ".local/share/containers/storage/") {
+		return true
+	}
+
+	// Check for rootless container storage in root home
+	// Pattern: /root/.local/share/containers/storage/
+	if strings.Contains(mountpoint, "/root/.local/share/containers/storage/") {
+		return true
+	}
+
+	return false
 }
